@@ -1,3 +1,4 @@
+
 # StickyTasks
 
 A lightweight, freeform collaborative task board for local networks.
@@ -29,3 +30,5 @@ All tasks are stored locally in:
 tasks.json
 
 If the server isn't running, opening `task-manager.html` directly will use browser storage instead.
+
+<img width="1870" height="950" alt="image_2026-07-19_215806221" src="https://github.com/user-attachments/assets/1e801fd4-e001-4bcf-8623-7ec72db1edc8" />
