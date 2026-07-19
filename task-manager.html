@@ -1,0 +1,1494 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StickyTasks</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect x='8' y='8' width='48' height='48' rx='9' fill='%23FCD34D'/><path d='M56 40 L40 56 L40 45 a5 5 0 0 1 5 -5 Z' fill='%23E5B93B'/><circle cx='25' cy='30' r='3.6' fill='%231F2937'/><circle cx='39' cy='30' r='3.6' fill='%231F2937'/><circle cx='26.3' cy='28.7' r='1.15' fill='%23fff'/><circle cx='40.3' cy='28.7' r='1.15' fill='%23fff'/><ellipse cx='18.5' cy='37.5' rx='3' ry='2' fill='%23F9A66C'/><ellipse cx='45.5' cy='37.5' rx='3' ry='2' fill='%23F9A66C'/><path d='M26 39 Q32 45 38 39' fill='none' stroke='%231F2937' stroke-width='2.4' stroke-linecap='round'/></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%23fff'/><rect x='8' y='8' width='48' height='48' rx='9' fill='%23FCD34D'/><path d='M56 40 L40 56 L40 45 a5 5 0 0 1 5 -5 Z' fill='%23E5B93B'/><circle cx='25' cy='30' r='3.6' fill='%231F2937'/><circle cx='39' cy='30' r='3.6' fill='%231F2937'/><circle cx='26.3' cy='28.7' r='1.15' fill='%23fff'/><circle cx='40.3' cy='28.7' r='1.15' fill='%23fff'/><ellipse cx='18.5' cy='37.5' rx='3' ry='2' fill='%23F9A66C'/><ellipse cx='45.5' cy='37.5' rx='3' ry='2' fill='%23F9A66C'/><path d='M26 39 Q32 45 38 39' fill='none' stroke='%231F2937' stroke-width='2.4' stroke-linecap='round'/></svg>">
+<script>
+  /* set the theme before first paint so there is no light-mode flash */
+  (function(){
+    try{
+      var t = localStorage.getItem("floating-tasks.theme");
+      if(t!=="dark" && t!=="light"){
+        t = (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
+      }
+      document.documentElement.setAttribute("data-theme", t);
+    }catch(e){ document.documentElement.setAttribute("data-theme","light"); }
+  })();
+</script>
+<style>
+  :root{
+    --bg:#eef2f7;
+    --dot:#d3dce8;
+    --header:#ffffff;
+    --surface:#ffffff;
+    --border:#e2e8f0;
+    --chip:#f8fafc;
+    --chip-hover:#eef2f7;
+    --ink:#1f2937;
+    --muted:#6b7280;
+    --accent:#3b82f6;
+    --good:#22c55e;
+    --good-dark:#16a34a;
+    --danger:#ef4444;
+    --note-bg:#fffdf7;
+    --n-border:rgba(0,0,0,.06);
+    --n-muted:rgba(0,0,0,.42);
+    --n-faint:rgba(0,0,0,.32);
+    --n-xhover:rgba(0,0,0,.12);
+    --pill:rgba(0,0,0,.1);
+    --toast-bg:#1f2937;
+    --toast-fg:#ffffff;
+    --wire:#9aa7b8;
+    --shadow:0 6px 16px rgba(31,41,55,.16), 0 2px 4px rgba(31,41,55,.10);
+    --shadow-lg:0 18px 40px rgba(31,41,55,.28), 0 6px 12px rgba(31,41,55,.18);
+    /* frosted-glass UI tokens */
+    --glass:rgba(255,255,255,.6);
+    --glass-brd:rgba(255,255,255,.7);
+    --glass-fill:rgba(0,0,0,.05);
+    --glass-fill-h:rgba(0,0,0,.09);
+    --seg-active:#ffffff;
+    --accent-soft:rgba(59,130,246,.16);
+    --glass-shadow:0 8px 30px rgba(17,24,39,.14), 0 2px 8px rgba(17,24,39,.08);
+    --glass-blur:saturate(180%) blur(20px);
+  }
+  :root[data-theme="dark"]{
+    --bg:#0f141b;
+    --dot:#273240;
+    --header:#151b24;
+    --surface:#1b222c;
+    --border:#2a3543;
+    --chip:#1c242f;
+    --chip-hover:#26303c;
+    --ink:#e6eaf1;
+    --muted:#98a3b3;
+    --accent:#60a5fa;
+    --good:#22c55e;
+    --good-dark:#5ee08a;
+    --danger:#f87171;
+    --note-bg:#1e2632;
+    --n-border:rgba(255,255,255,.08);
+    --n-muted:rgba(255,255,255,.5);
+    --n-faint:rgba(255,255,255,.38);
+    --n-xhover:rgba(255,255,255,.16);
+    --pill:rgba(255,255,255,.14);
+    --toast-bg:#2b3542;
+    --toast-fg:#e6eaf1;
+    --wire:#6b7d92;
+    --shadow:0 6px 16px rgba(0,0,0,.5), 0 2px 4px rgba(0,0,0,.4);
+    --shadow-lg:0 18px 40px rgba(0,0,0,.62), 0 6px 12px rgba(0,0,0,.45);
+    --glass:rgba(30,34,42,.58);
+    --glass-brd:rgba(255,255,255,.12);
+    --glass-fill:rgba(255,255,255,.08);
+    --glass-fill-h:rgba(255,255,255,.14);
+    --seg-active:rgba(255,255,255,.18);
+    --accent-soft:rgba(96,165,250,.22);
+    --glass-shadow:0 8px 30px rgba(0,0,0,.5), 0 2px 8px rgba(0,0,0,.4);
+  }
+  #ctxMenu, #colorPop, #menuPop, .done-card{
+    transition: background-color .25s ease, border-color .25s ease, color .25s ease;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
+    color:var(--ink);
+    background:var(--bg);
+    overflow:hidden;
+  }
+
+  /* ---------- floating frosted-glass bubbles (header + pages) ---------- */
+  .bubble{
+    position:fixed; z-index:40;
+    background:var(--glass); color:var(--ink);
+    -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur);
+    border:1px solid var(--glass-brd); border-radius:18px; box-shadow:var(--glass-shadow);
+  }
+  .icon-btn{
+    border:none; background:var(--glass-fill); color:var(--ink);
+    width:32px; height:32px; border-radius:10px; cursor:pointer;
+    font-size:17px; display:inline-flex; align-items:center; justify-content:center; transition:.15s;
+  }
+  .icon-btn:hover{background:var(--glass-fill-h)}
+
+  /* one combined bubble: title row + tabs + pages */
+  #headerBar{
+    top:14px; left:14px; width:208px; max-height:calc(100vh - 28px);
+    display:flex; flex-direction:column; padding:8px;
+  }
+  .bar-top{display:flex; align-items:center; gap:8px; padding:2px 2px 8px}
+  .bar-top .logo{display:inline-flex; width:22px; height:22px}
+  .bar-top h1{
+    font-size:15.5px; margin:0; letter-spacing:.2px; font-weight:700; color:var(--ink);
+    flex:1; white-space:nowrap;
+  }
+  .tabs{display:flex; gap:3px; margin-bottom:8px; background:var(--glass-fill); padding:3px; border-radius:12px}
+  .tab{
+    flex:1; border:none; background:transparent; color:var(--muted);
+    padding:6px 10px; border-radius:9px; cursor:pointer; font-size:12.5px; font-weight:600;
+    display:flex; align-items:center; justify-content:center; gap:6px; transition:.15s;
+  }
+  .tab:hover{color:var(--ink)}
+  .tab.active{background:var(--seg-active); color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.14)}
+  .badge{
+    background:var(--glass-fill); color:var(--muted); min-width:18px; text-align:center;
+    padding:0 6px; border-radius:999px; font-size:10.5px; font-weight:700;
+  }
+  .tab.active .badge{background:var(--accent-soft); color:var(--accent)}
+  .side-sep{height:1px; background:var(--glass-fill-h); margin:0 2px 8px}
+  .side-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 6px 6px; font-size:10.5px; font-weight:700; letter-spacing:.6px;
+    text-transform:uppercase; color:var(--muted);
+  }
+  .side-add{
+    border:none; background:var(--glass-fill); color:var(--accent);
+    width:24px; height:24px; border-radius:8px; cursor:pointer; font-size:16px; line-height:1;
+    display:flex; align-items:center; justify-content:center; transition:.15s;
+  }
+  .side-add:hover{background:var(--glass-fill-h)}
+  .page-list{overflow:auto; padding:0 2px 2px}
+  .page-item{
+    display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:10px;
+    cursor:pointer; color:var(--ink); font-size:13.5px; margin-bottom:2px; transition:.12s; background:transparent;
+  }
+  .page-item:hover{background:var(--glass-fill)}
+  .page-item.active{font-weight:600}
+  .page-item .page-dot{width:10px; height:10px; border-radius:50%; flex:none; box-shadow:0 0 0 1px rgba(0,0,0,.1)}
+  .page-item .page-name{flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .page-item .page-input{
+    flex:1; min-width:0; border:none; outline:none; background:transparent;
+    font:inherit; font-size:13.5px; color:var(--ink); padding:0;
+  }
+  .page-item .page-del{
+    opacity:0; width:18px; height:18px; line-height:16px; text-align:center; border-radius:50%;
+    font-size:13px; color:inherit; flex:none; transition:.12s;
+  }
+  .page-item:hover .page-del{opacity:.7}
+  .page-item .page-del:hover{opacity:1; background:var(--glass-fill-h)}
+
+  /* ---------- dropdown menu (hidden extras) ---------- */
+  #menuPop{
+    position:fixed; z-index:1000; min-width:188px;
+    background:var(--glass); -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur);
+    border:1px solid var(--glass-brd); border-radius:14px; padding:6px; box-shadow:var(--glass-shadow);
+  }
+  #menuPop .m-item{
+    display:flex; align-items:center; gap:10px; width:100%;
+    border:none; background:transparent; color:var(--ink);
+    padding:9px 10px; border-radius:9px; cursor:pointer; font:inherit; font-size:13.5px; text-align:left;
+  }
+  #menuPop .m-item:hover{background:var(--glass-fill)}
+  #menuPop .m-sep{height:1px; background:var(--glass-fill-h); margin:5px 4px}
+  #menuPop .m-info{padding:6px 10px; font-size:12px; color:var(--muted)}
+
+  /* ---------- views (full-bleed board) ---------- */
+  .view{position:absolute; inset:0}
+  .hidden{display:none !important}
+
+  /* ---------- board ---------- */
+  #board{
+    overflow:hidden;
+    background-image:radial-gradient(var(--dot) 1.4px, transparent 1.4px);
+    background-size:22px 22px;
+    background-position:-11px -11px;
+    touch-action:none;
+  }
+  #board.panning{cursor:grabbing}
+  #board.panning .note{pointer-events:none}
+  /* the pannable layer that holds every note; middle-drag slides it around */
+  #world{position:absolute; inset:0; transform-origin:0 0; will-change:transform}
+  .hint{
+    position:absolute; top:42%; left:50%; transform:translate(-50%,-50%);
+    text-align:center; color:var(--muted); pointer-events:none; user-select:none;
+    max-width:460px; line-height:1.6;
+  }
+  .hint .big{font-size:34px; margin-bottom:8px; opacity:.5}
+
+  /* ---------- sticky note ---------- */
+  .note{
+    position:absolute; width:200px; min-height:92px;
+    padding:16px 14px 11px; border-radius:12px;
+    background:var(--note-bg);
+    box-shadow:var(--shadow);
+    transform:rotate(var(--rot,0deg));
+    cursor:grab; user-select:none;
+    transition:box-shadow .15s, transform .12s;
+    border:1px solid var(--n-border);
+    touch-action:none;               /* let us handle touch-drag ourselves */
+  }
+  .note .bar{position:absolute; top:0; left:0; right:0; height:6px; border-radius:11px 11px 0 0; background:var(--accent,#3b82f6)}
+  /* drag-to-connect handle on the right edge */
+  .note .link-handle{
+    position:absolute; right:-9px; top:calc(50% - 9px);
+    width:18px; height:18px; border-radius:50%;
+    background:var(--accent); border:2px solid var(--surface);
+    box-shadow:0 1px 4px rgba(0,0,0,.35);
+    cursor:crosshair; opacity:0; pointer-events:none;
+    transition:opacity .12s, transform .1s;
+  }
+  .note:hover .link-handle,
+  .note.activated .link-handle{opacity:1; pointer-events:auto}
+  .note .link-handle:hover{transform:scale(1.22)}
+  .note.dragging .link-handle{opacity:0; pointer-events:none}
+  .note.link-target{outline:3px solid var(--accent); outline-offset:2px}
+  /* tapped note on touch: highlight it and keep its controls visible */
+  .note.activated{outline:2px solid var(--accent); outline-offset:2px}
+  .note:hover{box-shadow:var(--shadow-lg)}
+  .note.dragging{
+    cursor:grabbing; z-index:9999 !important;
+    transform:rotate(var(--rot,0deg)) scale(1.04);
+    box-shadow:var(--shadow-lg); transition:none;
+  }
+  .note.completing{
+    transition:transform .28s ease, opacity .28s ease;
+    transform:scale(.2) rotate(var(--rot,0deg)); opacity:0;
+  }
+  .note .body{display:flex; align-items:flex-start; gap:8px}
+  .note .grip{flex:none; opacity:.4; font-size:13px; line-height:1.6; letter-spacing:1px; cursor:grab; user-select:none}
+  .note .txt{
+    flex:1; min-width:0;
+    font-size:14px; line-height:1.45; word-break:break-word; white-space:pre-wrap;
+    outline:none; min-height:20px; max-height:230px; overflow:auto;
+  }
+  .note .txt:empty:before{content:"New task…"; color:var(--n-faint)}
+  .note .x{
+    position:absolute; top:10px; right:8px; width:20px; height:20px; line-height:18px;
+    text-align:center; border-radius:50%; font-size:14px; color:var(--n-muted);
+    cursor:pointer; opacity:0; pointer-events:none; transition:.12s;
+  }
+  .note:hover .x,
+  .note.activated .x{opacity:1; pointer-events:auto}
+  .note .x:hover{background:var(--n-xhover); color:var(--ink)}
+
+  /* ---------- connections (wires between notes) ---------- */
+  #wires{position:absolute; top:0; left:0; width:100%; height:100%; overflow:visible; pointer-events:none; z-index:0}
+  .wire{fill:none; stroke:var(--wire); stroke-width:2.5; stroke-linecap:round; pointer-events:none; transition:stroke .12s, stroke-width .12s}
+  .wire.lit{stroke:var(--accent); stroke-width:3.5}
+  .wire.temp{stroke:var(--accent); stroke-dasharray:6 7; opacity:.85}
+  .wire-hit{fill:none; stroke:transparent; stroke-width:18; pointer-events:stroke; cursor:pointer}
+  #wireDel{
+    position:absolute; z-index:60; width:22px; height:22px; margin:-11px 0 0 -11px;
+    border-radius:50%; background:var(--surface); border:1px solid var(--border);
+    color:var(--danger); font-size:12px; line-height:20px; text-align:center; cursor:pointer;
+    box-shadow:var(--shadow); user-select:none;
+  }
+  #wireDel:hover{background:var(--danger); color:#fff; border-color:var(--danger)}
+
+  /* ---------- complete drop zone (fades in over the composer while dragging) ---------- */
+  #dropzone{
+    position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(10px);
+    z-index:41; width:min(560px, calc(100% - 40px)); height:60px;
+    border:1.5px dashed rgba(52,199,89,.55); border-radius:18px;
+    background:rgba(52,199,89,.12);
+    -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur);
+    display:flex; align-items:center; justify-content:center; gap:9px;
+    color:var(--good-dark); font-weight:600; font-size:14px; text-align:center;
+    pointer-events:none; user-select:none; opacity:0;
+    transition:opacity .22s ease, transform .22s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease;
+  }
+  #dropzone .ico{font-size:22px; line-height:1}
+  #dropzone.hot{
+    background:rgba(52,199,89,.85); color:#fff; border-color:rgba(52,199,89,.9); border-style:solid;
+    box-shadow:0 12px 30px rgba(52,199,89,.4);
+  }
+  /* smooth cross-fade: composer slides down/out, drop zone rises in — same spot */
+  body.holding #composer{ opacity:0; transform:translateX(-50%) translateY(10px); pointer-events:none; }
+  body.holding #dropzone{ opacity:1; transform:translateX(-50%) translateY(0); }
+  body.on-completed #composer{display:none}
+
+  /* ---------- composer (chat-style input) ---------- */
+  #composer{
+    position:fixed; left:50%; bottom:22px; transform:translateX(-50%);
+    z-index:40; width:min(560px, calc(100% - 40px));
+    display:flex; gap:10px; align-items:flex-end;
+    background:var(--glass); -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur);
+    border:1px solid var(--glass-brd); border-radius:18px;
+    padding:10px 10px 10px 12px; box-shadow:var(--glass-shadow);
+    transition:opacity .22s ease, transform .22s ease, background-color .25s ease, border-color .25s ease;
+  }
+  /* color chooser for the task about to be created */
+  #composer .color-dot{
+    flex:none; width:30px; height:30px; border-radius:50%; cursor:pointer; padding:0;
+    border:2px solid var(--surface); box-shadow:0 0 0 1px var(--border); align-self:center;
+    transition:transform .1s;
+  }
+  #composer .color-dot:hover{transform:scale(1.1)}
+  #colorPop{
+    position:fixed; z-index:1000; border-radius:14px; padding:11px 13px;
+    background:var(--glass); -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur);
+    border:1px solid var(--glass-brd); box-shadow:var(--glass-shadow);
+  }
+  #colorPop .ctx-title{font-size:11px; font-weight:700; color:var(--muted); margin-bottom:9px; text-transform:uppercase; letter-spacing:.5px}
+  #colorPop .sw-row{display:flex; gap:9px}
+  #colorPop .sw{
+    width:28px; height:28px; border-radius:50%; cursor:pointer; border:2px solid var(--surface);
+    box-shadow:0 0 0 1px var(--border); transition:transform .1s;
+  }
+  #colorPop .sw:hover{transform:scale(1.18)}
+  #colorPop .sw.sel{box-shadow:0 0 0 2px var(--ink)}
+  #composer textarea{
+    flex:1; border:none; outline:none; resize:none; font:inherit; font-size:15px;
+    line-height:1.45; max-height:120px; background:transparent; color:var(--ink);
+    padding:6px 0;
+  }
+  #composer .send{
+    flex:none; width:40px; height:40px; border:none; border-radius:12px; cursor:pointer;
+    background:var(--accent); color:#fff; font-size:17px; display:flex; align-items:center;
+    justify-content:center; transition:.15s;
+  }
+  #composer .send:hover{filter:brightness(1.07)}
+  #composer .send:disabled{opacity:.4; cursor:default}
+
+  /* ---------- right-click accent menu ---------- */
+  .popmenu{
+    position:fixed; z-index:1000; border-radius:14px; padding:11px 13px;
+    background:var(--glass); -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur);
+    border:1px solid var(--glass-brd); box-shadow:var(--glass-shadow);
+  }
+  .popmenu .ctx-title{font-size:11px; font-weight:700; color:var(--muted); margin-bottom:9px; text-transform:uppercase; letter-spacing:.5px}
+  .popmenu .sw-row{display:flex; gap:9px}
+  .popmenu .sw{
+    width:28px; height:28px; border-radius:50%; cursor:pointer; border:2px solid var(--surface);
+    box-shadow:0 0 0 1px var(--border); transition:transform .1s;
+  }
+  .popmenu .sw:hover{transform:scale(1.18)}
+  .popmenu .sw.sel{box-shadow:0 0 0 2px var(--ink)}
+  .popmenu .ctx-edit{
+    display:flex; align-items:center; gap:8px; width:100%; margin-top:11px;
+    border:none; background:var(--glass-fill); color:var(--ink);
+    padding:8px 10px; border-radius:9px; cursor:pointer; font:inherit; font-size:13px; font-weight:600;
+  }
+  .popmenu .ctx-edit:hover{background:var(--glass-fill-h)}
+
+  /* ---------- completed view ---------- */
+  #completedView{overflow:auto; padding:74px 26px 80px}
+  .done-head{max-width:1100px; margin:0 auto 18px; display:flex; align-items:baseline; gap:12px}
+  .done-head h2{margin:0; font-size:20px}
+  .done-head .count{color:var(--muted); font-size:14px}
+  .grid{
+    max-width:1100px; margin:0 auto;
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:16px;
+  }
+  .btn{
+    border:1px solid var(--border); background:var(--chip); color:var(--ink);
+    padding:8px 13px; border-radius:9px; cursor:pointer; font-size:13px; font-weight:600;
+    display:inline-flex; align-items:center; justify-content:center; gap:7px; transition:.15s;
+  }
+  .btn:hover{background:var(--chip-hover)}
+  .done-card{
+    background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:0 14px 14px;
+    box-shadow:0 2px 6px rgba(0,0,0,.05); display:flex; flex-direction:column; gap:10px; overflow:hidden;
+  }
+  .done-card .cap{height:6px; margin:0 -14px 12px; background:var(--accent,#94a3b8)}
+  .done-card .txt{font-size:14px; line-height:1.45; color:var(--muted); text-decoration:line-through; word-break:break-word; white-space:pre-wrap}
+  .done-card .when{font-size:11px; color:var(--muted)}
+  .done-card .row{display:flex; gap:8px; margin-top:2px}
+  .done-card .row .btn{flex:1; justify-content:center; padding:7px}
+  .undo{color:var(--accent)}
+  .del:hover{background:rgba(239,68,68,.12); border-color:rgba(239,68,68,.45); color:var(--danger)}
+  .empty-done{max-width:1100px; margin:60px auto; text-align:center; color:var(--muted)}
+  .empty-done .big{font-size:40px; opacity:.4; margin-bottom:8px}
+
+  .toast{
+    position:fixed; bottom:96px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--toast-bg); color:var(--toast-fg); padding:10px 18px; border-radius:10px; font-size:13px;
+    opacity:0; pointer-events:none; transition:.25s; z-index:100; box-shadow:var(--shadow);
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+
+  /* ---------- small screens / phones ---------- */
+  @media (max-width:640px){
+    #headerBar{top:10px; left:10px; padding:7px 9px 7px 12px}
+    #headerBar h1{font-size:15px}
+    #pagesBar{top:56px; left:10px; width:172px; max-height:52vh}
+    #composer, #dropzone{bottom:14px}
+  }
+</style>
+</head>
+<body>
+  <div id="headerBar" class="bubble">
+    <div class="bar-top">
+      <span class="logo"><svg viewBox="0 0 64 64" width="22" height="22" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="8" width="48" height="48" rx="9" fill="#FCD34D"/><path d="M56 40 L40 56 L40 45 a5 5 0 0 1 5 -5 Z" fill="#E5B93B"/><circle cx="25" cy="30" r="3.6" fill="#1F2937"/><circle cx="39" cy="30" r="3.6" fill="#1F2937"/><circle cx="26.3" cy="28.7" r="1.15" fill="#fff"/><circle cx="40.3" cy="28.7" r="1.15" fill="#fff"/><ellipse cx="18.5" cy="37.5" rx="3" ry="2" fill="#F9A66C"/><ellipse cx="45.5" cy="37.5" rx="3" ry="2" fill="#F9A66C"/><path d="M26 39 Q32 45 38 39" fill="none" stroke="#1F2937" stroke-width="2.4" stroke-linecap="round"/></svg></span>
+      <h1>StickyTasks</h1>
+      <button class="icon-btn" id="menuBtn" title="Menu">⋯</button>
+    </div>
+    <div class="tabs">
+      <button class="tab active" id="tabBoard" title="Board">Board</button>
+      <button class="tab" id="tabDone" title="Completed">Done <span class="badge" id="doneBadge">0</span></button>
+    </div>
+    <div class="side-sep"></div>
+    <div class="side-head"><span>Pages</span><button class="side-add" id="addPageBtn" title="New page">+</button></div>
+    <div class="page-list" id="pageList"></div>
+  </div>
+
+  <input type="file" id="fileInput" accept="application/json,.json" hidden>
+  <div id="menuPop" class="hidden"></div>
+
+  <main id="board" class="view">
+    <div class="hint" id="hint">
+      <div class="big">🫧</div>
+      <div>No tasks.<br>Type below to add one.</div>
+    </div>
+    <div id="world">
+      <svg id="wires"></svg>
+      <div id="wireDel" class="hidden" title="Unlink">✕</div>
+    </div>
+    <div id="dropzone"><span class="ico">✓</span><span>Drop to complete</span></div>
+  </main>
+
+  <section id="completedView" class="view hidden">
+    <div class="done-head">
+      <h2>✅ Completed</h2>
+      <span class="count" id="doneCount"></span>
+    </div>
+    <div class="grid" id="doneGrid"></div>
+  </section>
+
+  <!-- chat-style composer -->
+  <div id="composer">
+    <button id="composerColor" class="color-dot" title="Color"></button>
+    <textarea id="composerInput" rows="1" placeholder="New task…"></textarea>
+    <button id="sendBtn" class="send" title="Add">➤</button>
+  </div>
+
+  <!-- color picker for the composer -->
+  <div id="colorPop" class="hidden"></div>
+
+  <!-- right-click menus (task / page) -->
+  <div id="ctxMenu" class="popmenu hidden"></div>
+  <div id="pageCtx" class="popmenu hidden"></div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  const KEY = "floating-tasks.v1";
+  const THEME_KEY = "floating-tasks.theme";
+  // six curated accent colors that read well together
+  const ACCENTS = ["#ef4444","#f59e0b","#10b981","#3b82f6","#8b5cf6","#ec4899"];
+
+  // ---------------- theme (light / dark) ----------------
+  function currentTheme(){
+    let t = null;
+    try{ t = localStorage.getItem(THEME_KEY); }catch(e){}
+    if(t!=="dark" && t!=="light"){
+      t = (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
+    }
+    return t;
+  }
+  function applyTheme(t){
+    document.documentElement.setAttribute("data-theme", t);
+    const item = document.getElementById("themeItem");
+    if(item) item.textContent = t==="dark" ? "☀️  Light" : "🌙  Dark";
+  }
+  function toggleTheme(){
+    const t = document.documentElement.getAttribute("data-theme")==="dark" ? "light" : "dark";
+    try{ localStorage.setItem(THEME_KEY, t); }catch(e){}
+    applyTheme(t);
+  }
+
+  const board    = document.getElementById("board");
+  const world    = document.getElementById("world");
+  const completedView = document.getElementById("completedView");
+  const dropzone = document.getElementById("dropzone");
+  const composer = document.getElementById("composer");
+  const hint     = document.getElementById("hint");
+  const toastEl  = document.getElementById("toast");
+  const ctxMenu  = document.getElementById("ctxMenu");
+  const svg      = document.getElementById("wires");
+  const wireDel  = document.getElementById("wireDel");
+  const SVGNS    = "http://www.w3.org/2000/svg";
+
+  const ACTIVE_KEY = "floating-tasks.active";
+  const NEWCOLOR_KEY = "floating-tasks.newcolor";
+  let pages = [];                            // shared: [{id,name,tasks,completed,connections}]
+  let seq = 1;
+  let currentPageId = null;                  // which page THIS person is viewing (local)
+  let state = null;                          // always points at the current page object
+  let colorIx = 0;
+  let composerAccent = ACCENTS[3];           // color applied to the next task created
+  let pan   = { x:0, y:0 };                  // board scroll offset — per-person, per-page
+  let clientId = "c_" + Math.random().toString(36).slice(2,10);
+  let live = false;                          // true once connected to the shared server
+  let es = null;                             // EventSource for live updates
+  function panKey(){ return "floating-tasks.pan." + (currentPageId || "main"); }
+  function pageById(id){ return pages.find(p => p.id === id) || null; }
+  function pid(){ return "p" + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+  // ---------------- data helpers ----------------
+  function nextAccent(){ return ACCENTS[(colorIx++) % ACCENTS.length]; }
+  // collision-safe id so different people never generate the same one
+  function uid(){ return "t" + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+  function findTask(id){ return state.tasks.find(x=>x.id===id); }
+  function noteEl(id){ return world.querySelector('.note[data-id="'+id+'"]'); }
+  function onCompletedView(){ return !completedView.classList.contains("hidden"); }
+
+  function normalizePage(p, i){
+    p = p || {};
+    const tasks = (p.tasks||[]).map(t => ({
+      id:   t.id || uid(),
+      text: t.text || "",
+      x:    typeof t.x === "number" ? t.x : 24,
+      y:    typeof t.y === "number" ? t.y : 24,
+      rot:  typeof t.rot === "number" ? t.rot : 0,
+      accent: t.accent || t.color || nextAccent()
+    }));
+    const completed = (p.completed||[]).map(t => ({
+      id:   t.id || uid(),
+      text: t.text || "",
+      x: t.x, y: t.y, rot: t.rot || 0,
+      accent: t.accent || t.color || "#94a3b8",
+      ts: t.ts
+    }));
+    const connections = (p.connections||[])
+      .map(c => ({ id: c.id || uid(), a: c.a, b: c.b }))
+      .filter(c => c.a && c.b && c.a !== c.b);
+    return { id: p.id || pid(), name: p.name || "Untitled",
+             color: p.color || ACCENTS[(i||0) % ACCENTS.length], tasks, completed, connections };
+  }
+  // accept either the new {pages:[…]} shape or an old single-board file
+  function normalizeDoc(d){
+    d = d || {};
+    let pgs;
+    if(d.pages && d.pages.length){ pgs = d.pages.map(normalizePage); }
+    else { pgs = [ normalizePage({ id:"p_main", name:"Main", tasks:d.tasks, completed:d.completed, connections:d.connections }) ]; }
+    if(!pgs.length) pgs = [ normalizePage({ id:"p_main", name:"Main" }) ];
+    return { pages: pgs, seq: d.seq || 1 };
+  }
+  // load a whole document into the client and pick which page to show
+  function ingestDoc(d){
+    const nd = normalizeDoc(d);
+    pages = nd.pages; seq = nd.seq;
+    const want = loadActivePage();
+    currentPageId = (want && pageById(want)) ? want : pages[0].id;
+    state = pageById(currentPageId);
+    colorIx = state.tasks.length + state.completed.length;
+  }
+  function loadActivePage(){ try{ return localStorage.getItem(ACTIVE_KEY); }catch(e){ return null; } }
+  function saveActivePage(){ try{ localStorage.setItem(ACTIVE_KEY, currentPageId); }catch(e){} }
+
+  // apply an op to a page's DATA only (no DOM); mirrors the server's logic.
+  // used for pages the user isn't currently looking at.
+  function mutate(pg, op){
+    const find = (lst,id)=>lst.find(x=>x.id===id);
+    switch(op.type){
+      case "add": if(op.task && !find(pg.tasks, op.task.id)) pg.tasks.push(op.task); break;
+      case "move": { const t=find(pg.tasks,op.id); if(t){ t.x=op.x; t.y=op.y; } break; }
+      case "text": { const t=find(pg.tasks,op.id); if(t) t.text=op.text||""; break; }
+      case "accent": { const t=find(pg.tasks,op.id); if(t) t.accent=op.accent; break; }
+      case "del": pg.tasks=pg.tasks.filter(x=>x.id!==op.id);
+                  pg.connections=pg.connections.filter(c=>c.a!==op.id&&c.b!==op.id); break;
+      case "complete": { const t=find(pg.tasks,op.id); if(t){ pg.tasks=pg.tasks.filter(x=>x.id!==op.id); t.ts=op.ts; pg.completed.unshift(t); } break; }
+      case "undo": { const i=pg.completed.findIndex(x=>x.id===op.id); if(i>=0){ const t=pg.completed.splice(i,1)[0]; delete t.ts; if(op.x!=null)t.x=op.x; if(op.y!=null)t.y=op.y; pg.tasks.push(t); } break; }
+      case "delDone": pg.completed=pg.completed.filter(x=>x.id!==op.id);
+                      pg.connections=pg.connections.filter(c=>c.a!==op.id&&c.b!==op.id); break;
+      case "connect": { const c=op.conn; if(c&&c.a&&c.b&&c.a!==c.b&&!pg.connections.some(k=>(k.a===c.a&&k.b===c.b)||(k.a===c.b&&k.b===c.a))) pg.connections.push(c); break; }
+      case "disconnect": pg.connections=pg.connections.filter(c=>c.id!==op.id); break;
+    }
+  }
+
+  // ---------------- view offset (local to each person) ----------------
+  function loadPan(){
+    try{ const p = JSON.parse(localStorage.getItem(panKey()) || "null");
+         if(p && typeof p.x === "number") return { x:p.x, y:p.y }; }catch(e){}
+    return { x:0, y:0 };
+  }
+  function savePan(){ try{ localStorage.setItem(panKey(), JSON.stringify(pan)); }catch(e){} }
+
+  // ---------------- persistence / sync ----------------
+  function persistLocal(){ try{ localStorage.setItem(KEY, JSON.stringify({ pages, seq })); }catch(e){} }
+  // send one change: apply it locally (caller already did), keep a backup, push to the server
+  const PAGE_OPS = { addPage:1, delPage:1, renamePage:1, pageColor:1, replace:1 };
+  function emitOp(op){
+    if(!op.page && !PAGE_OPS[op.type]) op.page = currentPageId;   // tag task ops with their page
+    op.origin = clientId;
+    persistLocal();
+    if(live){
+      fetch("/api/op", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(op) })
+        .catch(()=>{});
+    }
+  }
+
+  // don't let an incoming change yank the board while THIS person is mid-action
+  let interacting = 0;
+  const remoteQueue = [];
+  function beginInteract(){ interacting++; }
+  function endInteract(){ if(interacting>0) interacting--; if(interacting===0) flushRemote(); }
+  function flushRemote(){ while(remoteQueue.length) applyRemote(remoteQueue.shift()); }
+
+  function renderAll(){ renderBoard(); renderCompleted(); updateBadges(); }
+
+  // apply a change that came from someone else
+  function applyRemote(op){
+    if(op.origin === clientId) return;              // ignore the echo of our own change
+    if(interacting > 0){ remoteQueue.push(op); return; }
+
+    // ----- page (workspace) changes -----
+    if(op.type === "addPage"){
+      if(op.page && !pageById(op.page.id)){ pages.push(normalizePage(op.page)); renderSidebar(); }
+      persistLocal(); return;
+    }
+    if(op.type === "renamePage"){
+      const p = pageById(op.id); if(p){ p.name = op.name || "Untitled"; renderSidebar(); }
+      persistLocal(); return;
+    }
+    if(op.type === "pageColor"){
+      const p = pageById(op.id); if(p){ p.color = op.color; renderSidebar(); }
+      persistLocal(); return;
+    }
+    if(op.type === "delPage"){
+      pages = pages.filter(p => p.id !== op.id);
+      if(!pages.length) pages.push(normalizePage({ id:"p_main", name:"Main" }));
+      try{ localStorage.removeItem("floating-tasks.pan." + op.id); }catch(e){}
+      if(!pageById(currentPageId)){        // the page we were on was deleted elsewhere
+        currentPageId = pages[0].id; state = pageById(currentPageId);
+        saveActivePage(); pan = loadPan(); renderAll(); applyPan();
+      }
+      renderSidebar(); persistLocal(); return;
+    }
+    if(op.type === "replace"){
+      ingestDoc(op.doc); pan = loadPan(); renderSidebar(); renderAll(); applyPan();
+      persistLocal(); return;
+    }
+
+    // ----- task changes (scoped to a page) -----
+    const pg = pageById(op.page);
+    if(!pg) return;
+    if(pg !== state){ mutate(pg, op); persistLocal(); return; }   // a page we aren't viewing: data only
+
+    mutate(state, op);                                            // current page: data + DOM
+    switch(op.type){
+      case "move": { const el = noteEl(op.id); if(el){ el.style.left = op.x+"px"; el.style.top = op.y+"px"; } renderWires(); break; }
+      case "text": { const el = noteEl(op.id); if(el){ const tx = el.querySelector(".txt"); if(tx.getAttribute("contenteditable")!=="true") tx.textContent = op.text; } break; }
+      case "accent": { const el = noteEl(op.id); if(el) el.style.setProperty("--accent", op.accent); break; }
+      default: renderAll();     // add / del / complete / undo / delDone / connect / disconnect
+    }
+    persistLocal();
+  }
+
+  // open the live stream; resolves true if we reached the shared server, false if not
+  function connectLive(){
+    return new Promise((resolve)=>{
+      let settled = false, ev;
+      try{ ev = new EventSource("/api/events"); }
+      catch(e){ resolve(false); return; }
+      es = ev;
+      ev.addEventListener("snapshot", e=>{
+        const first = !settled;
+        ingestDoc(JSON.parse(e.data));
+        if(first){ settled = true; live = true; resolve(true); }
+        else { pan = loadPan(); renderSidebar(); renderAll(); applyPan(); }   // re-sync after a dropped connection
+      });
+      ev.addEventListener("op", e=>{ try{ applyRemote(JSON.parse(e.data)); }catch(_){} });
+      ev.addEventListener("presence", e=>{ try{ updatePresence(JSON.parse(e.data).count); }catch(_){} });
+      ev.onerror = ()=>{ if(!settled){ settled = true; try{ ev.close(); }catch(_){} es = null; resolve(false); } };
+      setTimeout(()=>{ if(!settled){ settled = true; try{ ev.close(); }catch(_){} es = null; resolve(false); } }, 2000);
+    });
+  }
+
+  function updatePresence(count){
+    const el = document.getElementById("presence");
+    if(!el) return;
+    if(live && count > 0){ el.style.display = ""; el.textContent = "🟢 " + count + " online"; el.title = count + " connected right now"; }
+    else el.style.display = "none";
+  }
+
+  function updateStatus(){
+    const el = document.getElementById("status");
+    if(!el) return;
+    el.textContent = live ? "🟢 Live · shared" : "🌐 Local only";
+  }
+
+  // ---------------- helpers ----------------
+  function toast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(()=>toastEl.classList.remove("show"), 1500);
+  }
+  function fmt(ts){
+    if(!ts) return "";
+    return new Date(ts).toLocaleString(undefined,{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});
+  }
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+  }
+  function refreshHint(){ hint.style.display = state.tasks.length ? "none" : "block"; }
+
+  // ---------------- collision-aware placement ----------------
+  function rectDist(a,b){
+    const dx = Math.max(b.x - (a.x+a.w), a.x - (b.x+b.w), 0);
+    const dy = Math.max(b.y - (a.y+a.h), a.y - (b.y+b.h), 0);
+    return Math.hypot(dx,dy);
+  }
+  // reserved on-screen UI (drop zone, composer), converted to WORLD coordinates
+  function reservedRects(){
+    const b = board.getBoundingClientRect();
+    const out = [];
+    [dropzone, composer].forEach(el=>{
+      if(!el || (el===composer && composer.style.display==="none")) return;
+      const r = el.getBoundingClientRect();
+      if(r.width===0 && r.height===0) return;
+      out.push({ x:r.left-b.left-pan.x, y:r.top-b.top-pan.y, w:r.width, h:r.height });
+    });
+    return out;
+  }
+  // pick a spot near the CENTER of the current view, clear of other notes / UI,
+  // spiralling outward only if the middle is occupied — so new tasks are always visible
+  function findSpot(w=208, h=150){
+    const b = board.getBoundingClientRect();
+    const cx = -pan.x + b.width/2  - w/2;      // center of the visible board (world coords)
+    const cy = -pan.y + b.height/2 - h/2;
+    const obstacles = state.tasks.map(t=>({x:t.x, y:t.y, w:w, h:h})).concat(reservedRects());
+    const clearAt = (x,y)=>{
+      const cand = { x, y, w, h };
+      for(const o of obstacles){ if(rectDist(cand, o) < 20) return false; }   // ~20px breathing room
+      return true;
+    };
+    if(clearAt(cx, cy)) return { x:Math.round(cx), y:Math.round(cy) };
+    const step = 46;
+    for(let ring=1; ring<48; ring++){
+      const count = ring*8;
+      for(let a=0; a<count; a++){
+        const ang = (a/count) * Math.PI * 2;
+        const x = cx + Math.cos(ang) * ring * step;
+        const y = cy + Math.sin(ang) * ring * step;
+        if(clearAt(x, y)) return { x:Math.round(x), y:Math.round(y) };
+      }
+    }
+    return { x:Math.round(cx), y:Math.round(cy) };   // give up gracefully — still centered
+  }
+  // keep notes within a large world so they can never be lost for good
+  function clampInto(t){
+    const LIM = 6000;
+    t.x = Math.max(-LIM, Math.min(t.x, LIM));
+    t.y = Math.max(-LIM, Math.min(t.y, LIM));
+  }
+  function applyPan(){
+    world.style.transform = "translate(" + pan.x + "px," + pan.y + "px)";
+    board.style.backgroundPosition = (pan.x - 11) + "px " + (pan.y - 11) + "px";
+  }
+  function centerView(){ pan.x = 0; pan.y = 0; applyPan(); savePan(); }
+
+  // ---------------- connections (visual links between notes) ----------------
+  // a note's box, and a point on its border toward a target — wires leave any side
+  function noteBox(id){
+    const el = world.querySelector('.note[data-id="'+id+'"]');
+    if(!el) return null;
+    return { w: el.offsetWidth, h: el.offsetHeight,
+             cx: el.offsetLeft + el.offsetWidth/2, cy: el.offsetTop + el.offsetHeight/2 };
+  }
+  function edgeToward(box, tx, ty){
+    const dx = tx - box.cx, dy = ty - box.cy;
+    if(!dx && !dy) return { x: box.cx, y: box.cy };
+    const s = 0.5 / Math.max(Math.abs(dx)/box.w, Math.abs(dy)/box.h);
+    return { x: box.cx + dx*s, y: box.cy + dy*s };
+  }
+  // cute rounded curve between two points; returns the path data + its midpoint
+  function curve(p0, p1){
+    const mx=(p0.x+p1.x)/2, my=(p0.y+p1.y)/2;
+    const dx=p1.x-p0.x, dy=p1.y-p0.y;
+    const len=Math.hypot(dx,dy)||1;
+    const off=Math.min(len*0.22, 48);
+    const cx=mx+(-dy/len)*off, cy=my+(dx/len)*off;   // bow perpendicular to the line
+    const d="M"+p0.x+" "+p0.y+" Q"+cx+" "+cy+" "+p1.x+" "+p1.y;
+    const mid={ x:0.25*p0.x+0.5*cx+0.25*p1.x, y:0.25*p0.y+0.5*cy+0.25*p1.y };
+    return { d, mid };
+  }
+  function anchors(aId, bId){
+    const a = noteBox(aId), b = noteBox(bId);
+    if(!a || !b) return null;
+    return { p0: edgeToward(a, b.cx, b.cy), p1: edgeToward(b, a.cx, a.cy) };
+  }
+  let hideDelTimer = null;
+  function renderWires(){
+    // drop the old paths (keep the persistent temp wire if a link is being drawn)
+    [...svg.querySelectorAll(".wire, .wire-hit")].forEach(n=>{ if(!n.classList.contains("temp")) n.remove(); });
+    const onBoard = new Set(state.tasks.map(t=>t.id));
+    state.connections.forEach(c=>{
+      if(!onBoard.has(c.a) || !onBoard.has(c.b)) return;   // an endpoint is completed -> hide, but keep the record
+      const a = anchors(c.a, c.b);
+      if(!a) return;
+      const { d, mid } = curve(a.p0, a.p1);
+      const line = document.createElementNS(SVGNS, "path");
+      line.setAttribute("d", d); line.setAttribute("class", "wire");
+      line.dataset.id = c.id; line.dataset.a = c.a; line.dataset.b = c.b;
+      const hit = document.createElementNS(SVGNS, "path");
+      hit.setAttribute("d", d); hit.setAttribute("class", "wire-hit");
+      hit.addEventListener("mouseenter", ()=>{
+        clearTimeout(hideDelTimer);
+        line.classList.add("lit");
+        wireDel.style.left = mid.x + "px"; wireDel.style.top = mid.y + "px";
+        wireDel.classList.remove("hidden");
+        wireDel._id = c.id; wireDel._line = line;
+      });
+      hit.addEventListener("mouseleave", scheduleHideDel);
+      svg.appendChild(line); svg.appendChild(hit);
+    });
+  }
+  function scheduleHideDel(){ hideDelTimer = setTimeout(hideDel, 200); }
+  function hideDel(){
+    wireDel.classList.add("hidden");
+    if(wireDel._line) wireDel._line.classList.remove("lit");
+    wireDel._id = null; wireDel._line = null;
+  }
+  function addConnection(a, b){
+    if(a === b) return;
+    if(state.connections.some(c => (c.a===a&&c.b===b) || (c.a===b&&c.b===a))){ toast("Already linked"); return; }
+    const conn = { id: uid(), a, b };
+    state.connections.push(conn);
+    emitOp({ type:"connect", conn }); renderWires(); toast("Linked");
+  }
+  function removeConnection(id){
+    state.connections = state.connections.filter(c => c.id !== id);
+    hideDel(); emitOp({ type:"disconnect", id }); renderWires();
+  }
+  function pruneConnections(taskId){
+    state.connections = state.connections.filter(c => c.a !== taskId && c.b !== taskId);
+  }
+
+  // drag from a note's edge handle onto another note to link them
+  let connecting = null;
+  function startConnect(e, sourceId){
+    if(e.button !== 0) return;
+    e.stopPropagation(); e.preventDefault();
+    hideCtx();
+    const handle = e.currentTarget;
+    connecting = { source: sourceId, pointerId: e.pointerId };
+    beginInteract();
+    try{ handle.setPointerCapture(e.pointerId); }catch(_){}
+    const temp = document.createElementNS(SVGNS, "path");
+    temp.setAttribute("class", "wire temp");
+    svg.appendChild(temp);
+
+    const targetAt = (cx, cy)=>{
+      const el = document.elementFromPoint(cx, cy);
+      const note = el && el.closest ? el.closest(".note") : null;
+      const id = note && note.dataset.id;
+      return (id && id !== sourceId) ? id : null;
+    };
+    const highlight = (id)=>{
+      world.querySelectorAll(".note.link-target").forEach(n=>n.classList.remove("link-target"));
+      if(id){ const n = world.querySelector('.note[data-id="'+id+'"]'); if(n) n.classList.add("link-target"); }
+    };
+    const move = ev=>{
+      const src = noteBox(sourceId); if(!src) return;
+      const tid = targetAt(ev.clientX, ev.clientY);
+      highlight(tid);
+      if(tid){
+        const a = anchors(sourceId, tid);
+        if(a) temp.setAttribute("d", curve(a.p0, a.p1).d);
+      }else{
+        const b = board.getBoundingClientRect();
+        const end = { x: ev.clientX - b.left - pan.x, y: ev.clientY - b.top - pan.y };
+        temp.setAttribute("d", curve(edgeToward(src, end.x, end.y), end).d);
+      }
+    };
+    const finish = ev=>{
+      const tid = targetAt(ev.clientX, ev.clientY);
+      try{ handle.releasePointerCapture(connecting.pointerId); }catch(_){}
+      handle.removeEventListener("pointermove", move);
+      handle.removeEventListener("pointerup", finish);
+      handle.removeEventListener("pointercancel", finish);
+      temp.remove(); highlight(null); connecting = null;
+      endInteract();
+      if(tid) addConnection(sourceId, tid);
+    };
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("pointerup", finish);
+    handle.addEventListener("pointercancel", finish);
+  }
+
+  // ---------------- notes ----------------
+  // touch "selection": tapping a note reveals its controls (✕ / link dot) and
+  // highlights it, since there is no hover on touch screens. One at a time.
+  function activateNote(el){ clearActivated(); if(el) el.classList.add("activated"); }
+  function clearActivated(){ world.querySelectorAll(".note.activated").forEach(n=>n.classList.remove("activated")); }
+
+  function renderNote(t){
+    const el = document.createElement("div");
+    el.className = "note";
+    el.dataset.id = t.id;
+    el.style.left = t.x + "px";
+    el.style.top  = t.y + "px";
+    el.style.setProperty("--rot", (t.rot||0) + "deg");
+    el.style.setProperty("--accent", t.accent);
+    el.innerHTML =
+      '<div class="bar"></div>' +
+      '<div class="x" title="Delete">×</div>' +
+      '<div class="link-handle" title="Link"></div>' +
+      '<div class="body"><span class="grip">⠿</span><div class="txt" spellcheck="false"></div></div>';
+    el.querySelector(".txt").textContent = t.text;
+
+    // drag-to-connect handle
+    el.querySelector(".link-handle").addEventListener("pointerdown", e=>startConnect(e, t.id));
+
+    // delete
+    const x = el.querySelector(".x");
+    x.addEventListener("pointerdown", e=>e.stopPropagation());
+    x.addEventListener("click", e=>{
+      e.stopPropagation();
+      state.tasks = state.tasks.filter(v=>v.id!==t.id);
+      pruneConnections(t.id);
+      emitOp({ type:"del", id:t.id }); el.remove(); refreshHint(); renderWires();
+    });
+
+    // edit
+    const txt = el.querySelector(".txt");
+    txt.addEventListener("dblclick", ()=>focusEdit(el));
+    txt.addEventListener("blur", ()=>commitEdit(el));
+    txt.addEventListener("keydown", e=>{
+      if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); txt.blur(); }
+    });
+
+    // right-click -> accent picker
+    el.addEventListener("contextmenu", e=>{
+      e.preventDefault();
+      showCtx(e.clientX, e.clientY, t.id);
+    });
+
+    attachDrag(el);
+    world.appendChild(el);
+    return el;
+  }
+
+  function focusEdit(el){
+    const txt = el.querySelector(".txt");
+    if(txt.getAttribute("contenteditable")==="true"){ txt.focus(); return; }
+    beginInteract();
+    txt.setAttribute("contenteditable","true");
+    el.style.cursor = "text";
+    txt.focus();
+    const range = document.createRange(); range.selectNodeContents(txt); range.collapse(false);
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
+  }
+  function commitEdit(el){
+    const txt = el.querySelector(".txt");
+    if(txt.getAttribute("contenteditable")!=="true") return;   // wasn't being edited
+    txt.removeAttribute("contenteditable");
+    el.style.cursor = "grab";
+    const t = state.tasks.find(v=>v.id===el.dataset.id);
+    if(t){ t.text = txt.textContent.trim(); txt.textContent = t.text; emitOp({ type:"text", id:t.id, text:t.text }); }
+    endInteract();
+  }
+
+  function attachDrag(el){
+    let sx, sy, ox, oy, moved, active=false;
+    el.addEventListener("pointerdown", e=>{
+      if(el.querySelector(".txt").getAttribute("contenteditable")==="true") return;
+      if(e.button!==0) return;
+      active = true; moved = false;
+      sx = e.clientX; sy = e.clientY;
+      ox = parseFloat(el.style.left); oy = parseFloat(el.style.top);
+      try{ el.setPointerCapture(e.pointerId); }catch(_){}
+    });
+    el.addEventListener("pointermove", e=>{
+      if(!active) return;
+      const dx = e.clientX - sx, dy = e.clientY - sy;
+      if(!moved && Math.hypot(dx,dy) < 4) return;
+      if(!moved){ moved = true; el.classList.add("dragging"); document.body.classList.add("holding"); beginInteract(); }
+      el.style.left = (ox + dx) + "px";
+      el.style.top  = (oy + dy) + "px";
+      dropzone.classList.toggle("hot", overDrop(e.clientX, e.clientY));
+      if(state.connections.length) renderWires();   // keep linked lines attached live
+    });
+    el.addEventListener("pointerup", e=>{
+      if(!active) return;
+      active = false;
+      try{ el.releasePointerCapture(e.pointerId); }catch(_){}
+      el.classList.remove("dragging");
+      dropzone.classList.remove("hot");
+      document.body.classList.remove("holding");
+      if(!moved){
+        // a tap (no drag) on touch selects the note so its controls appear
+        if(e.pointerType === "touch") activateNote(el);
+        return;
+      }
+      if(overDrop(e.clientX, e.clientY)){ completeTask(el); endInteract(); return; }
+      const t = state.tasks.find(v=>v.id===el.dataset.id);
+      if(!t){ endInteract(); return; }
+      t.x = parseFloat(el.style.left);
+      t.y = parseFloat(el.style.top);
+      clampInto(t);
+      el.style.left = t.x + "px"; el.style.top = t.y + "px";
+      emitOp({ type:"move", id:t.id, x:t.x, y:t.y });
+      if(state.connections.length) renderWires();
+      endInteract();
+    });
+  }
+
+  function overDrop(cx, cy){
+    const z = dropzone.getBoundingClientRect();
+    return cx>=z.left && cx<=z.right && cy>=z.top && cy<=z.bottom;
+  }
+
+  // ---------------- complete / undo ----------------
+  function completeTask(el){
+    const t = state.tasks.find(v=>v.id===el.dataset.id);
+    if(!t) return;
+    el.classList.add("completing");
+    state.tasks = state.tasks.filter(v=>v.id!==t.id);
+    t.ts = Date.now();
+    state.completed.unshift(t);
+    emitOp({ type:"complete", id:t.id, ts:t.ts }); updateBadges();
+    renderWires();   // its lines vanish now, but the links are remembered for undo
+    setTimeout(()=>{ el.remove(); refreshHint(); }, 280);
+    toast("Done ✓");
+  }
+  function undoTask(id){
+    const i = state.completed.findIndex(v=>v.id===id);
+    if(i<0) return;
+    const t = state.completed.splice(i,1)[0];
+    delete t.ts;
+    if(typeof t.x!=="number" || typeof t.y!=="number"){ const s=findSpot(); t.x=s.x; t.y=s.y; }
+    clampInto(t);
+    state.tasks.push(t);
+    emitOp({ type:"undo", id:t.id, x:t.x, y:t.y });
+    renderCompleted(); updateBadges();
+    renderNote(t); refreshHint(); renderWires();   // remembered links reappear
+    toast("Restored");
+  }
+  function deleteCompleted(id){
+    state.completed = state.completed.filter(v=>v.id!==id);
+    pruneConnections(id);
+    emitOp({ type:"delDone", id }); renderCompleted(); updateBadges();
+  }
+
+  // ---------------- composer ----------------
+  function autogrow(ta){ ta.style.height="auto"; ta.style.height=Math.min(ta.scrollHeight,120)+"px"; }
+  function sendComposer(){
+    const ta = document.getElementById("composerInput");
+    const text = ta.value.trim();
+    if(!text) return;
+    const spot = findSpot();
+    const t = {
+      id: uid(), text,
+      x: spot.x, y: spot.y,
+      rot: +(Math.random()*10 - 5).toFixed(1),
+      accent: composerAccent
+    };
+    state.tasks.push(t);
+    emitOp({ type:"add", task:t });
+    showView("board");
+    renderNote(t); refreshHint();
+    ta.value = ""; autogrow(ta); ta.focus();
+    toast("Added");
+  }
+
+  // ---------------- right-click accent menu ----------------
+  let ctxTargetId = null;
+  function buildCtx(){
+    ctxMenu.innerHTML = '<div class="ctx-title">Color</div><div class="sw-row"></div>' +
+                        '<button class="ctx-edit">✎ Rename</button>';
+    const row = ctxMenu.querySelector(".sw-row");
+    ACCENTS.forEach(c=>{
+      const s = document.createElement("div");
+      s.className = "sw"; s.style.background = c; s.dataset.color = c;
+      s.addEventListener("click", e=>{ e.stopPropagation(); applyAccent(c); hideCtx(); });
+      row.appendChild(s);
+    });
+    // rename: reuse the inline editor, which only touches the task's text
+    ctxMenu.querySelector(".ctx-edit").addEventListener("click", e=>{
+      e.stopPropagation();
+      const id = ctxTargetId; hideCtx();
+      const el = noteEl(id); if(el) focusEdit(el);
+    });
+  }
+  function showCtx(x, y, taskId){
+    ctxTargetId = taskId;
+    ctxMenu.classList.remove("hidden");
+    const t = state.tasks.find(v=>v.id===taskId);
+    ctxMenu.querySelectorAll(".sw").forEach(s=> s.classList.toggle("sel", t && s.dataset.color===t.accent));
+    const mw = ctxMenu.offsetWidth, mh = ctxMenu.offsetHeight;
+    ctxMenu.style.left = Math.min(x, innerWidth  - mw - 8) + "px";
+    ctxMenu.style.top  = Math.min(y, innerHeight - mh - 8) + "px";
+  }
+  function hideCtx(){ ctxMenu.classList.add("hidden"); ctxTargetId = null; }
+  function applyAccent(c){
+    const t = state.tasks.find(v=>v.id===ctxTargetId);
+    if(!t) return;
+    t.accent = c; emitOp({ type:"accent", id:t.id, accent:c });
+    const el = board.querySelector('.note[data-id="'+t.id+'"]');
+    if(el) el.style.setProperty("--accent", c);
+  }
+
+  // ---------------- render collections ----------------
+  function renderBoard(){
+    board.querySelectorAll(".note").forEach(n=>n.remove());
+    state.tasks.forEach(renderNote);
+    refreshHint();
+    renderWires();
+  }
+  function renderCompleted(){
+    const grid = document.getElementById("doneGrid");
+    const countEl = document.getElementById("doneCount");
+    grid.innerHTML = "";
+    countEl.textContent = state.completed.length ? state.completed.length + " done" : "";
+    if(!state.completed.length){
+      grid.innerHTML = '<div class="empty-done"><div class="big">🌱</div>Nothing done yet.</div>';
+      return;
+    }
+    state.completed.forEach(t=>{
+      const c = document.createElement("div");
+      c.className = "done-card";
+      c.style.setProperty("--accent", t.accent || "#94a3b8");
+      c.innerHTML =
+        '<div class="cap"></div>' +
+        '<div class="txt">'+ escapeHtml(t.text || "(empty)") +'</div>' +
+        '<div class="when">Completed '+ fmt(t.ts) +'</div>' +
+        '<div class="row">' +
+          '<button class="btn undo">Undo</button>' +
+          '<button class="btn del">Delete</button>' +
+        '</div>';
+      c.querySelector(".undo").addEventListener("click", ()=>undoTask(t.id));
+      c.querySelector(".del").addEventListener("click", ()=>deleteCompleted(t.id));
+      grid.appendChild(c);
+    });
+  }
+  function updateBadges(){ document.getElementById("doneBadge").textContent = state.completed.length; }
+
+  // ---------------- views ----------------
+  function showView(name){
+    const isBoard = name === "board";
+    board.classList.toggle("hidden", !isBoard);
+    completedView.classList.toggle("hidden", isBoard);
+    document.getElementById("tabBoard").classList.toggle("active", isBoard);
+    document.getElementById("tabDone").classList.toggle("active", !isBoard);
+    document.body.classList.toggle("on-completed", !isBoard);   // hides the composer
+    if(!isBoard) renderCompleted();
+    hideCtx();
+  }
+
+  // ---------------- export / import ----------------
+  function exportJson(){
+    const blob = new Blob([JSON.stringify({ pages, seq }, null, 2)], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "stickytasks.json";
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    toast("Exported");
+  }
+  function importJson(file){
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      try{
+        ingestDoc(JSON.parse(reader.result));       // accepts new multi-page or old single-board files
+        saveActivePage();
+        emitOp({ type:"replace", doc:{ pages, seq } });   // shares the imported board with everyone
+        pan = loadPan();
+        renderSidebar(); renderAll(); applyPan();
+        toast("Imported");
+      }catch(e){ toast("Bad file"); }
+    };
+    reader.readAsText(file);
+  }
+
+  // ---------------- pages / workspaces (sidebar) ----------------
+  let addingPage = false, renamingId = null;
+  function nextPageColor(){ return ACCENTS[pages.length % ACCENTS.length]; }
+  function hexToRgba(hex, a){
+    const n = parseInt((hex||"#3b82f6").replace("#",""), 16);
+    return "rgba(" + ((n>>16)&255) + "," + ((n>>8)&255) + "," + (n&255) + "," + a + ")";
+  }
+
+  function renderSidebar(){
+    const list = document.getElementById("pageList");
+    list.innerHTML = "";
+    pages.forEach(p=>{
+      const item = document.createElement("div");
+      item.className = "page-item" + (p.id === currentPageId ? " active" : "");
+
+      if(p.id === renamingId){                                  // inline rename
+        item.innerHTML = '<span class="page-dot"></span>';
+        item.querySelector(".page-dot").style.background = p.color;
+        const inp = document.createElement("input");
+        inp.className = "page-input"; inp.value = p.name;
+        item.appendChild(inp); list.appendChild(item);
+        inp.focus(); inp.select();
+        let done = false;
+        const finish = save=>{ if(done) return; done = true; renamingId = null;
+          const n = inp.value.trim();
+          if(save && n && n !== p.name){ p.name = n; emitOp({ type:"renamePage", id:p.id, name:n }); }
+          renderSidebar(); };
+        inp.addEventListener("keydown", e=>{ if(e.key==="Enter"){e.preventDefault();finish(true);} else if(e.key==="Escape"){e.preventDefault();finish(false);} });
+        inp.addEventListener("blur", ()=>finish(true));
+        return;
+      }
+
+      item.innerHTML = '<span class="page-dot"></span><span class="page-name"></span><span class="page-del" title="Delete">×</span>';
+      item.querySelector(".page-dot").style.background = p.color;
+      item.querySelector(".page-name").textContent = p.name;
+      if(p.id === currentPageId){ item.style.background = hexToRgba(p.color, .2); item.style.color = p.color; }
+      item.addEventListener("click", e=>{ if(e.target.closest(".page-del")) return; switchPage(p.id); });
+      item.addEventListener("dblclick", e=>{ e.stopPropagation(); startRenamePage(p.id); });
+      item.addEventListener("contextmenu", e=>{ e.preventDefault(); showPageCtx(e.clientX, e.clientY, p.id); });
+      item.querySelector(".page-del").addEventListener("click", e=>{ e.stopPropagation(); deletePage(p.id); });
+      list.appendChild(item);
+    });
+
+    if(addingPage){                                             // inline "new page" row
+      const item = document.createElement("div");
+      item.className = "page-item";
+      const color = nextPageColor();
+      item.innerHTML = '<span class="page-dot"></span>';
+      item.querySelector(".page-dot").style.background = color;
+      const inp = document.createElement("input");
+      inp.className = "page-input"; inp.placeholder = "Page name";
+      item.appendChild(inp); list.appendChild(item);
+      inp.focus();
+      let done = false;
+      const finish = save=>{ if(done) return; done = true; addingPage = false;
+        const n = inp.value.trim();
+        if(save && n) addPageNamed(n, color); else renderSidebar(); };
+      inp.addEventListener("keydown", e=>{ if(e.key==="Enter"){e.preventDefault();finish(true);} else if(e.key==="Escape"){e.preventDefault();finish(false);} });
+      inp.addEventListener("blur", ()=>finish(true));
+    }
+  }
+  function startAddPage(){ renamingId = null; addingPage = true; renderSidebar(); }
+  function startRenamePage(id){ addingPage = false; renamingId = id; renderSidebar(); }
+  function addPageNamed(name, color){
+    const p = { id: pid(), name, color, tasks:[], completed:[], connections:[] };
+    pages.push(p);
+    emitOp({ type:"addPage", page:{ id:p.id, name:p.name, color:p.color } });
+    switchPage(p.id);
+    toast("Page added");
+  }
+  function setPageColor(id, color){
+    const p = pageById(id); if(!p) return;
+    p.color = color; emitOp({ type:"pageColor", id, color });
+    renderSidebar();
+  }
+  function switchPage(id){
+    if(!pageById(id) || id === currentPageId) return;
+    savePan();                                    // remember our spot on the page we're leaving
+    currentPageId = id; state = pageById(id); saveActivePage();
+    colorIx = state.tasks.length + state.completed.length;
+    pan = loadPan();
+    showView("board");
+    renderSidebar(); renderAll(); applyPan();
+  }
+  // right-click a page: color swatches + rename
+  let pageCtxId = null;
+  function showPageCtx(x, y, id){
+    const p = pageById(id); if(!p) return;
+    pageCtxId = id;
+    const el = document.getElementById("pageCtx");
+    el.innerHTML = '<div class="ctx-title">Color</div><div class="sw-row"></div><button class="ctx-edit">✎ Rename</button>';
+    const row = el.querySelector(".sw-row");
+    ACCENTS.forEach(c=>{
+      const s = document.createElement("div");
+      s.className = "sw" + (c === p.color ? " sel" : "");
+      s.style.background = c;
+      s.addEventListener("click", e=>{ e.stopPropagation(); setPageColor(id, c); hidePageCtx(); });
+      row.appendChild(s);
+    });
+    el.querySelector(".ctx-edit").addEventListener("click", e=>{ e.stopPropagation(); const rid = pageCtxId; hidePageCtx(); startRenamePage(rid); });
+    el.classList.remove("hidden");
+    const mw = el.offsetWidth, mh = el.offsetHeight;
+    el.style.left = Math.min(x, innerWidth - mw - 8) + "px";
+    el.style.top  = Math.min(y, innerHeight - mh - 8) + "px";
+  }
+  function hidePageCtx(){ document.getElementById("pageCtx").classList.add("hidden"); pageCtxId = null; }
+  function deletePage(id){
+    if(pages.length <= 1){ toast("Keep 1 page"); return; }
+    const p = pageById(id); if(!p) return;
+    if(!confirm('Delete “' + p.name + '”?')) return;
+    pages = pages.filter(x=>x.id!==id);
+    try{ localStorage.removeItem("floating-tasks.pan." + id); }catch(e){}
+    emitOp({ type:"delPage", id });
+    if(currentPageId === id){
+      currentPageId = pages[0].id; state = pageById(currentPageId); saveActivePage();
+      colorIx = state.tasks.length + state.completed.length;
+      pan = loadPan();
+    }
+    renderSidebar(); renderAll(); applyPan();
+    toast("Deleted");
+  }
+  // ---------------- dropdown menu (hidden extras) ----------------
+  function buildMenu(){
+    const m = document.getElementById("menuPop");
+    m.innerHTML =
+      '<button class="m-item" id="menuCenter">⌖  Center</button>' +
+      '<button class="m-item" id="themeItem">🌙  Dark</button>' +
+      '<div class="m-sep"></div>' +
+      '<button class="m-item" id="menuExport">⬇  Export</button>' +
+      '<button class="m-item" id="menuImport">⬆  Import</button>' +
+      '<div class="m-sep"></div>' +
+      '<div class="m-info" id="status"></div>' +
+      '<div class="m-info" id="presence" style="display:none"></div>';
+    m.querySelector("#menuCenter").addEventListener("click", ()=>{ hideMenu(); centerView(); });
+    m.querySelector("#themeItem").addEventListener("click", toggleTheme);
+    m.querySelector("#menuExport").addEventListener("click", ()=>{ hideMenu(); exportJson(); });
+    m.querySelector("#menuImport").addEventListener("click", ()=>{ hideMenu(); document.getElementById("fileInput").click(); });
+  }
+  function showMenu(){
+    const m = document.getElementById("menuPop");
+    m.classList.remove("hidden");
+    const b = document.getElementById("menuBtn").getBoundingClientRect();
+    const mw = m.offsetWidth;
+    m.style.left = Math.max(8, Math.min(b.right - mw, innerWidth - mw - 8)) + "px";
+    m.style.top = (b.bottom + 8) + "px";
+  }
+  function hideMenu(){ document.getElementById("menuPop").classList.add("hidden"); }
+
+  // ---------------- composer color picker ----------------
+  function loadComposerAccent(){
+    try{ const c = localStorage.getItem(NEWCOLOR_KEY); if(ACCENTS.indexOf(c) >= 0) return c; }catch(e){}
+    return ACCENTS[3];
+  }
+  function setComposerAccent(c){
+    composerAccent = c;
+    try{ localStorage.setItem(NEWCOLOR_KEY, c); }catch(e){}
+    document.getElementById("composerColor").style.background = c;
+  }
+  function buildColorPop(){
+    const pop = document.getElementById("colorPop");
+    pop.innerHTML = '<div class="ctx-title">Color</div><div class="sw-row"></div>';
+    const row = pop.querySelector(".sw-row");
+    ACCENTS.forEach(c=>{
+      const s = document.createElement("div");
+      s.className = "sw" + (c === composerAccent ? " sel" : "");
+      s.style.background = c;
+      s.addEventListener("click", e=>{ e.stopPropagation(); setComposerAccent(c); hideColorPop(); });
+      row.appendChild(s);
+    });
+  }
+  function showColorPop(){
+    buildColorPop();
+    const pop = document.getElementById("colorPop");
+    pop.classList.remove("hidden");
+    const dot = document.getElementById("composerColor").getBoundingClientRect();
+    const pw = pop.offsetWidth, ph = pop.offsetHeight;
+    let left = Math.max(8, Math.min(dot.left + dot.width/2 - pw/2, innerWidth - pw - 8));
+    let top = dot.top - ph - 10;                          // prefer above the dot
+    if(top < 8) top = dot.bottom + 10;
+    pop.style.left = left + "px"; pop.style.top = top + "px";
+  }
+  function hideColorPop(){ document.getElementById("colorPop").classList.add("hidden"); }
+
+  // ---------------- wire up ----------------
+  // middle-mouse-drag to pan the board
+  function setupPan(){
+    let panning=false, sx=0, sy=0, ox=0, oy=0, moved=false, viaTouch=false;
+    // stop the browser's middle-click autoscroll / paste
+    board.addEventListener("mousedown", e=>{ if(e.button===1) e.preventDefault(); });
+    board.addEventListener("auxclick",  e=>{ if(e.button===1) e.preventDefault(); });
+    board.addEventListener("pointerdown", e=>{
+      const touch = e.pointerType === "touch";
+      // desktop: middle mouse anywhere.  touch: one finger on empty board space.
+      // (notes / link dots handle their own gestures, so leave those to them)
+      if(e.button!==1 && !(touch && !e.target.closest(".note"))) return;
+      e.preventDefault();
+      panning=true; viaTouch=touch; moved=false;
+      sx=e.clientX; sy=e.clientY; ox=pan.x; oy=pan.y;
+      board.classList.add("panning"); hideCtx();
+      try{ board.setPointerCapture(e.pointerId); }catch(_){}
+    });
+    board.addEventListener("pointermove", e=>{
+      if(!panning) return;
+      const dx = e.clientX - sx, dy = e.clientY - sy;
+      if(!moved && Math.hypot(dx,dy) < 4) return;   // ignore tiny jitter so a tap stays a tap
+      moved = true;
+      pan.x = ox + dx; pan.y = oy + dy;
+      applyPan();
+    });
+    const end = e=>{
+      if(!panning) return;
+      panning=false; board.classList.remove("panning");
+      try{ board.releasePointerCapture(e.pointerId); }catch(_){}
+      if(moved) savePan();
+      // a touch tap on empty space (no real drag) clears the mobile selection
+      else if(viaTouch) clearActivated();
+      viaTouch=false; moved=false;
+    };
+    board.addEventListener("pointerup", end);
+    board.addEventListener("pointercancel", end);
+  }
+
+  function wire(){
+    document.getElementById("fileInput").addEventListener("change", e=>{
+      if(e.target.files[0]) importJson(e.target.files[0]);
+      e.target.value = "";
+    });
+    document.getElementById("tabBoard").addEventListener("click", ()=>showView("board"));
+    document.getElementById("tabDone").addEventListener("click", ()=>showView("completed"));
+    document.getElementById("addPageBtn").addEventListener("click", startAddPage);
+    document.getElementById("menuBtn").addEventListener("click", e=>{
+      e.stopPropagation();
+      const m = document.getElementById("menuPop");
+      if(m.classList.contains("hidden")) showMenu(); else hideMenu();
+    });
+    document.getElementById("composerColor").addEventListener("click", e=>{
+      e.stopPropagation();
+      const pop = document.getElementById("colorPop");
+      if(pop.classList.contains("hidden")) showColorPop(); else hideColorPop();
+    });
+
+    // the little ✕ that removes a hovered connection
+    wireDel.addEventListener("mouseenter", ()=>clearTimeout(hideDelTimer));
+    wireDel.addEventListener("mouseleave", scheduleHideDel);
+    wireDel.addEventListener("click", ()=>{ if(wireDel._id) removeConnection(wireDel._id); });
+
+    const ta = document.getElementById("composerInput");
+    ta.addEventListener("input", ()=>autogrow(ta));
+    ta.addEventListener("keydown", e=>{
+      if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); sendComposer(); }
+    });
+    document.getElementById("sendBtn").addEventListener("click", sendComposer);
+
+    setupPan();
+
+    // close the popups on outside interaction
+    document.addEventListener("click", e=>{
+      if(!e.target.closest("#ctxMenu")) hideCtx();
+      if(!e.target.closest("#colorPop") && !e.target.closest("#composerColor")) hideColorPop();
+      if(!e.target.closest("#menuPop") && !e.target.closest("#menuBtn")) hideMenu();
+      if(!e.target.closest("#pageCtx")) hidePageCtx();
+    });
+    document.addEventListener("pointerdown", e=>{ if(!e.target.closest("#ctxMenu")) hideCtx(); }, true);
+    window.addEventListener("scroll", hideCtx, true);
+    document.addEventListener("keydown", e=>{
+      const t = e.target;
+      const typing = t && (t.tagName==="TEXTAREA" || t.isContentEditable);
+      if(e.key==="Escape"){ hideCtx(); hideColorPop(); hideMenu(); hidePageCtx(); }
+      if(e.key==="Home" && !typing){ e.preventDefault(); centerView(); }
+    });
+
+    window.addEventListener("resize", ()=>{ hideCtx(); hideColorPop(); hideMenu(); hidePageCtx(); });
+  }
+
+  // ---------------- init ----------------
+  (async function init(){
+    const ok = await connectLive();       // join the shared board if a server is there
+    if(!ok){
+      // opened as a plain file (or no server) — fall back to this browser's own storage
+      let d = null;
+      try{ d = JSON.parse(localStorage.getItem(KEY) || "null"); }catch(e){}
+      ingestDoc(d || {});
+    }
+    composerAccent = loadComposerAccent();
+    pan = loadPan();
+    buildCtx();
+    buildMenu();
+    wire();
+    setComposerAccent(composerAccent);    // paint the composer's color dot
+    renderSidebar();
+    renderBoard();
+    applyPan();
+    renderCompleted();
+    updateBadges();
+    updateStatus();
+    applyTheme(currentTheme());
+    document.getElementById("composerInput").focus();
+  })();
+})();
+</script>
+</body>
+</html>
