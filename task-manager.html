@@ -1222,6 +1222,12 @@
     });
   }
 
+  // keep connection lines glued to notes whenever a note's size changes
+  // (hovering reveals "+ subtask", subtasks added/removed, text grows, etc.)
+  let _wireRaf = null;
+  function scheduleWires(){ if(_wireRaf) return; _wireRaf = requestAnimationFrame(()=>{ _wireRaf = null; renderWires(); }); }
+  const roWires = ("ResizeObserver" in window) ? new ResizeObserver(()=>scheduleWires()) : null;
+
   function renderNote(t){
     const el = document.createElement("div");
     el.className = "note";
@@ -1280,8 +1286,13 @@
       showCtx(e.clientX, e.clientY, t.id);
     });
 
+    // hovering reveals "+ subtask" and changes the note's height — redraw links so they stay glued
+    el.addEventListener("mouseenter", renderWires);
+    el.addEventListener("mouseleave", renderWires);
+
     attachDrag(el);
     world.appendChild(el);
+    if(roWires) roWires.observe(el);
     return el;
   }
 

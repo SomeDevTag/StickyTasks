@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🗒️ StickyTasks
+# 🟨 StickyTasks
 
 **A little sticky-note board you can share with people on the same Wi-Fi.**
 
@@ -18,7 +18,7 @@ No accounts, no cloud — it just runs on your machine and saves to a plain `tas
 
 ---
 
-## 🚀 Start it
+## Start it
 
 1. Install [Python](https://www.python.org/downloads/) — tick **Add python.exe to PATH** during setup.
 2. Double-click **`Start StickyTasks.bat`**.
@@ -36,20 +36,20 @@ No accounts, no cloud — it just runs on your machine and saves to a plain `tas
 
 ---
 
-## ✨ What you can do
+## > What you can do
 
 | | |
 |---|---|
-| 📝 **Notes** | Type in the bar and hit Enter — the note lands in the middle of your view. Pick its color with the dot on the left, drag it anywhere, right-click to recolor or rename, and drop it on the green bar to finish it. Notes grow to fit their content. |
-| ✅ **Subtasks** | Every note holds a little checklist. Hit **+ subtask**, tick things off, double-click a subtask to rename it. The note resizes as the list changes. |
-| ▭ **Groups** | Grab the frame tool by the input and draw a box around related notes, Figma-style. Drag the header to move the whole cluster (notes stay independent). Resize from any edge or corner, rename, recolor, or delete the frame without touching what's inside. |
-| 📂 **Pages** | Keep separate boards in the sidebar, each with its own color. **+** to add, click to switch, double-click to rename, right-click to recolor. |
-| 🔗 **Links** | Drag the dot on a note's edge onto another to connect them — the line finds the shortest path between the two. |
-| 🌙 **The rest** | Dark mode, recenter, and export/import live in the **⋯** menu. Pan by dragging empty space (or middle-mouse); press **Home** to jump back. |
+| **Notes** | Type in the bar and hit Enter — the note lands in the middle of your view. Pick its color with the dot on the left, drag it anywhere, right-click to recolor or rename, and drop it on the green bar to finish it. Notes grow to fit their content. |
+| **Subtasks** | Every note holds a little checklist. Hit **+ subtask**, tick things off, double-click a subtask to rename it. The note resizes as the list changes. |
+| **Groups** | Grab the frame tool by the input and draw a box around related notes, Figma-style. Drag the header to move the whole cluster (notes stay independent). Resize from any edge or corner, rename, recolor, or delete the frame without touching what's inside. |
+| **Pages** | Keep separate boards in the sidebar, each with its own color. **+** to add, click to switch, double-click to rename, right-click to recolor. |
+| **Links** | Drag the dot on a note's edge onto another to connect them — the line finds the shortest path between the two. |
+| **The rest** | Dark mode, recenter, and export/import live in the **⋯** menu. Pan by dragging empty space (or middle-mouse); press **Home** to jump back. |
 
 ---
 
-## 💾 Where your stuff lives
+## 💾 Where your stuff saves
 
 Everything sits in **`tasks.json`** next to the app — pages, notes, colors, groups, subtasks, the lot.
 Copy that file to back up or move your board. If the host closes the black window, the shared board goes offline until it's started again.
