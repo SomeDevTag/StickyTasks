@@ -210,8 +210,8 @@
 
   /* ---------- sticky note ---------- */
   .note{
-    position:absolute; width:200px; min-height:92px;
-    padding:16px 14px 11px; border-radius:12px;
+    position:absolute; width:200px; min-height:44px;
+    padding:14px 14px 12px; border-radius:12px;
     background:var(--note-bg);
     box-shadow:var(--shadow);
     transform:rotate(var(--rot,0deg));
@@ -252,9 +252,39 @@
   .note .txt{
     flex:1; min-width:0;
     font-size:14px; line-height:1.45; word-break:break-word; white-space:pre-wrap;
-    outline:none; min-height:20px; max-height:230px; overflow:auto;
+    outline:none; min-height:20px;                 /* grows with content, no inner scroll */
   }
   .note .txt:empty:before{content:"New task…"; color:var(--n-faint)}
+  /* subtask checklist — cute custom checkboxes tinted to the note's accent */
+  .note .subs{display:flex; flex-direction:column; gap:3px; margin-top:9px}
+  .note .subs:empty{display:none; margin:0}      /* no empty gap when there are no subtasks */
+  .note .sub{display:flex; align-items:flex-start; gap:8px; font-size:13px; padding:2px 2px; border-radius:8px; transition:background .12s}
+  .note .sub:hover{background:var(--n-xhover)}
+  .note .sub .cb{
+    appearance:none; -webkit-appearance:none; flex:none; position:relative;
+    width:17px; height:17px; margin:1px 0 0; cursor:pointer;
+    border:2px solid var(--n-muted); border-radius:6px; background:transparent;
+    transition:background .15s, border-color .15s, transform .1s;
+  }
+  .note .sub .cb:hover{border-color:var(--accent)}
+  .note .sub .cb:active{transform:scale(.88)}
+  .note .sub.done .cb{background:var(--accent); border-color:var(--accent)}
+  .note .sub.done .cb::after{
+    content:""; position:absolute; left:4px; top:.5px; width:4px; height:8px;
+    border:solid #fff; border-width:0 2px 2px 0; border-radius:1px; transform:rotate(42deg);
+  }
+  .note .sub .sub-txt{flex:1; min-width:0; outline:none; line-height:1.45; word-break:break-word; white-space:pre-wrap}
+  .note .sub.done .sub-txt{text-decoration:line-through; text-decoration-color:var(--accent); opacity:.5}
+  .note .sub .sub-x{flex:none; width:16px; text-align:center; color:var(--n-muted); cursor:pointer; opacity:0; transition:.12s}
+  .note .sub:hover .sub-x{opacity:.6}
+  .note .sub .sub-x:hover{opacity:1; color:var(--danger)}
+  .note .sub-add{
+    display:none; align-items:center; gap:5px; margin-top:8px; padding:4px 10px 4px 8px;
+    font-size:11.5px; font-weight:600; letter-spacing:.2px; color:var(--n-muted); cursor:pointer;
+    border-radius:999px; background:var(--n-xhover); width:max-content;
+  }
+  .note:hover .sub-add, .note.activated .sub-add{display:inline-flex}   /* only takes space when reachable */
+  .note .sub-add:hover{color:var(--accent); background:var(--accent-soft)}
   .note .x{
     position:absolute; top:10px; right:8px; width:20px; height:20px; line-height:18px;
     text-align:center; border-radius:50%; font-size:14px; color:var(--n-muted);
@@ -263,6 +293,38 @@
   .note:hover .x,
   .note.activated .x{opacity:1; pointer-events:auto}
   .note .x:hover{background:var(--n-xhover); color:var(--ink)}
+
+  /* ---------- background groups ---------- */
+  .group{position:absolute; z-index:1; border-radius:16px; box-shadow:0 4px 16px rgba(0,0,0,.06)}
+  .group-head{
+    display:flex; align-items:center; gap:6px; padding:7px 8px 7px 12px;
+    border-radius:15px 15px 0 0; cursor:grab; user-select:none;
+    font-size:13px; font-weight:600; color:var(--ink);
+  }
+  .group-head.dragging{cursor:grabbing}
+  .group-name{flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .group-name-input{flex:1; min-width:0; border:none; outline:none; background:transparent; font:inherit; font-weight:600; color:var(--ink)}
+  .group-btn{
+    flex:none; width:22px; height:22px; border:none; border-radius:6px; cursor:pointer;
+    background:rgba(0,0,0,.08); color:var(--ink); font-size:12px;
+    display:flex; align-items:center; justify-content:center; transition:.12s;
+  }
+  .group-btn:hover{background:rgba(0,0,0,.18)}
+  /* OS-window style resize: edges + corners, cursor shows on hover */
+  .gh{position:absolute; z-index:3}
+  .gh-n{top:-4px; left:10px; right:10px; height:9px; cursor:ns-resize}
+  .gh-s{bottom:-4px; left:10px; right:10px; height:9px; cursor:ns-resize}
+  .gh-e{right:-4px; top:10px; bottom:10px; width:9px; cursor:ew-resize}
+  .gh-w{left:-4px; top:10px; bottom:10px; width:9px; cursor:ew-resize}
+  .gh-ne{top:-5px; right:-5px; width:14px; height:14px; cursor:nesw-resize}
+  .gh-sw{bottom:-5px; left:-5px; width:14px; height:14px; cursor:nesw-resize}
+  .gh-nw{top:-5px; left:-5px; width:14px; height:14px; cursor:nwse-resize}
+  .gh-se{bottom:-5px; right:-5px; width:14px; height:14px; cursor:nwse-resize}
+  /* rectangle being drawn */
+  .group-preview{position:absolute; z-index:5; border:2px dashed var(--accent); background:var(--accent-soft); border-radius:14px; pointer-events:none}
+  #board.drawing{cursor:crosshair}
+  #board.drawing .note, #board.drawing .group{cursor:crosshair}
+  .note{z-index:2}
 
   /* ---------- connections (wires between notes) ---------- */
   #wires{position:absolute; top:0; left:0; width:100%; height:100%; overflow:visible; pointer-events:none; z-index:0}
@@ -295,20 +357,32 @@
     background:rgba(52,199,89,.85); color:#fff; border-color:rgba(52,199,89,.9); border-style:solid;
     box-shadow:0 12px 30px rgba(52,199,89,.4);
   }
-  /* smooth cross-fade: composer slides down/out, drop zone rises in — same spot */
-  body.holding #composer{ opacity:0; transform:translateX(-50%) translateY(10px); pointer-events:none; }
+  /* smooth cross-fade: dock slides down/out, drop zone rises in — same spot */
+  body.holding #dock{ opacity:0; transform:translateX(-50%) translateY(10px); pointer-events:none; }
   body.holding #dropzone{ opacity:1; transform:translateX(-50%) translateY(0); }
-  body.on-completed #composer{display:none}
+  body.on-completed #dock{display:none}
 
-  /* ---------- composer (chat-style input) ---------- */
-  #composer{
+  /* ---------- bottom dock: tool button + composer (Figma-style) ---------- */
+  #dock{
     position:fixed; left:50%; bottom:22px; transform:translateX(-50%);
-    z-index:40; width:min(560px, calc(100% - 40px));
+    z-index:40; display:flex; gap:10px; align-items:flex-end;
+    transition:opacity .22s ease, transform .22s ease;
+  }
+  .tool-btn{
+    flex:none; width:46px; height:46px; border-radius:14px; cursor:pointer; color:var(--ink);
+    background:var(--glass); -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur);
+    border:1px solid var(--glass-brd); box-shadow:var(--glass-shadow);
+    font-size:18px; display:flex; align-items:center; justify-content:center; transition:.15s;
+  }
+  .tool-btn:hover{background:var(--glass-fill-h)}
+  .tool-btn.active{background:var(--accent); color:#fff; border-color:var(--accent)}
+  #composer{
+    width:min(520px, calc(100vw - 96px));
     display:flex; gap:10px; align-items:flex-end;
     background:var(--glass); -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur);
     border:1px solid var(--glass-brd); border-radius:18px;
     padding:10px 10px 10px 12px; box-shadow:var(--glass-shadow);
-    transition:opacity .22s ease, transform .22s ease, background-color .25s ease, border-color .25s ease;
+    transition:background-color .25s ease, border-color .25s ease;
   }
   /* color chooser for the task about to be created */
   #composer .color-dot{
@@ -449,10 +523,13 @@
   </section>
 
   <!-- chat-style composer -->
-  <div id="composer">
-    <button id="composerColor" class="color-dot" title="Color"></button>
-    <textarea id="composerInput" rows="1" placeholder="New task…"></textarea>
-    <button id="sendBtn" class="send" title="Add">➤</button>
+  <div id="dock">
+    <button id="groupTool" class="tool-btn" title="Draw a group">▭</button>
+    <div id="composer">
+      <button id="composerColor" class="color-dot" title="Color"></button>
+      <textarea id="composerInput" rows="1" placeholder="New task…"></textarea>
+      <button id="sendBtn" class="send" title="Add">➤</button>
+    </div>
   </div>
 
   <!-- color picker for the composer -->
@@ -461,6 +538,7 @@
   <!-- right-click menus (task / page) -->
   <div id="ctxMenu" class="popmenu hidden"></div>
   <div id="pageCtx" class="popmenu hidden"></div>
+  <div id="groupPop" class="popmenu hidden"></div>
 
   <div class="toast" id="toast"></div>
 
@@ -531,13 +609,15 @@
 
   function normalizePage(p, i){
     p = p || {};
+    const normSubs = s => (s||[]).map(x => ({ id: x.id || uid(), text: x.text || "", done: !!x.done }));
     const tasks = (p.tasks||[]).map(t => ({
       id:   t.id || uid(),
       text: t.text || "",
       x:    typeof t.x === "number" ? t.x : 24,
       y:    typeof t.y === "number" ? t.y : 24,
       rot:  typeof t.rot === "number" ? t.rot : 0,
-      accent: t.accent || t.color || nextAccent()
+      accent: t.accent || t.color || nextAccent(),
+      subs: normSubs(t.subs)
     }));
     const completed = (p.completed||[]).map(t => ({
       id:   t.id || uid(),
@@ -549,8 +629,12 @@
     const connections = (p.connections||[])
       .map(c => ({ id: c.id || uid(), a: c.a, b: c.b }))
       .filter(c => c.a && c.b && c.a !== c.b);
+    const groups = (p.groups||[]).map(g => ({
+      id: g.id || uid(), name: g.name || "Group", color: g.color || "#64748b",
+      x: g.x||0, y: g.y||0, w: g.w||360, h: g.h||260
+    }));
     return { id: p.id || pid(), name: p.name || "Untitled",
-             color: p.color || ACCENTS[(i||0) % ACCENTS.length], tasks, completed, connections };
+             color: p.color || ACCENTS[(i||0) % ACCENTS.length], tasks, completed, connections, groups };
   }
   // accept either the new {pages:[…]} shape or an old single-board file
   function normalizeDoc(d){
@@ -590,6 +674,12 @@
                       pg.connections=pg.connections.filter(c=>c.a!==op.id&&c.b!==op.id); break;
       case "connect": { const c=op.conn; if(c&&c.a&&c.b&&c.a!==c.b&&!pg.connections.some(k=>(k.a===c.a&&k.b===c.b)||(k.a===c.b&&k.b===c.a))) pg.connections.push(c); break; }
       case "disconnect": pg.connections=pg.connections.filter(c=>c.id!==op.id); break;
+      case "subs": { const t=find(pg.tasks,op.id); if(t) t.subs=op.subs||[]; break; }
+      case "addGroup": { if(!pg.groups) pg.groups=[]; const g=op.group; if(g&&!find(pg.groups,g.id)) pg.groups.push(g); break; }
+      case "groupBox": { const g=find(pg.groups||[],op.id); if(g){ g.x=op.x; g.y=op.y; g.w=op.w; g.h=op.h; } break; }
+      case "renameGroup": { const g=find(pg.groups||[],op.id); if(g) g.name=op.name||""; break; }
+      case "groupColor": { const g=find(pg.groups||[],op.id); if(g) g.color=op.color; break; }
+      case "delGroup": pg.groups=(pg.groups||[]).filter(g=>g.id!==op.id); break;
     }
   }
 
@@ -911,6 +1001,227 @@
   function activateNote(el){ clearActivated(); if(el) el.classList.add("activated"); }
   function clearActivated(){ world.querySelectorAll(".note.activated").forEach(n=>n.classList.remove("activated")); }
 
+  // ---------------- background groups ----------------
+  function groupEl(id){ return world.querySelector('.group[data-id="'+id+'"]'); }
+  // tasks whose box currently overlaps/touches the group rectangle
+  function tasksTouching(g){
+    return state.tasks.filter(t=>{
+      const el = noteEl(t.id);
+      const w = el ? el.offsetWidth : 200, h = el ? el.offsetHeight : 92;
+      return t.x < g.x + g.w && t.x + w > g.x && t.y < g.y + g.h && t.y + h > g.y;
+    });
+  }
+  function renderGroups(){
+    world.querySelectorAll(".group").forEach(n=>n.remove());
+    (state.groups||[]).forEach(g=>{
+      const el = document.createElement("div");
+      el.className = "group"; el.dataset.id = g.id;
+      el.style.left = g.x+"px"; el.style.top = g.y+"px";
+      el.style.width = g.w+"px"; el.style.height = g.h+"px";
+      el.style.background = hexToRgba(g.color, .1);
+      el.style.border = "1px solid " + hexToRgba(g.color, .4);
+      el.innerHTML =
+        '<div class="group-head">' +
+          '<span class="group-name"></span>' +
+          '<button class="group-btn g-rename" title="Rename">✎</button>' +
+          '<button class="group-btn g-color" title="Color">●</button>' +
+          '<button class="group-btn g-del" title="Delete group">×</button>' +
+        '</div>' +
+        '<div class="gh gh-n"></div><div class="gh gh-s"></div><div class="gh gh-e"></div><div class="gh gh-w"></div>' +
+        '<div class="gh gh-ne"></div><div class="gh gh-nw"></div><div class="gh gh-se"></div><div class="gh gh-sw"></div>';
+      el.querySelector(".group-head").style.background = hexToRgba(g.color, .22);
+      el.querySelector(".group-name").textContent = g.name;
+      el.querySelectorAll(".group-btn").forEach(b=>b.addEventListener("pointerdown", e=>e.stopPropagation()));
+      el.querySelector(".g-del").addEventListener("click", e=>{ e.stopPropagation(); deleteGroup(g.id); });
+      el.querySelector(".g-color").addEventListener("click", e=>{ e.stopPropagation(); showGroupColor(e.clientX, e.clientY, g.id); });
+      el.querySelector(".g-rename").addEventListener("click", e=>{ e.stopPropagation(); renameGroupInline(el, g); });
+      attachGroupDrag(el.querySelector(".group-head"), g);
+      ["n","s","e","w","ne","nw","se","sw"].forEach(dir=>{
+        el.querySelector(".gh-"+dir).addEventListener("pointerdown", e=>startResize(e, g, dir));
+      });
+      world.appendChild(el);
+    });
+  }
+  // drag the header -> move the group AND every task overlapping it (relative positions kept)
+  function attachGroupDrag(head, g){
+    let sx, sy, gx, gy, active=false, moved=false, items=[];
+    head.addEventListener("pointerdown", e=>{
+      if(e.button!==0 || e.target.closest(".group-btn") || head.querySelector(".group-name-input")) return;
+      active=true; moved=false; sx=e.clientX; sy=e.clientY; gx=g.x; gy=g.y;
+      items = tasksTouching(g).map(t=>({ t, x:t.x, y:t.y, el:noteEl(t.id) }));
+      beginInteract(); head.classList.add("dragging");
+      try{ head.setPointerCapture(e.pointerId); }catch(_){}
+    });
+    head.addEventListener("pointermove", e=>{
+      if(!active) return;
+      const dx=e.clientX-sx, dy=e.clientY-sy;
+      if(!moved && Math.hypot(dx,dy)<4) return;
+      moved=true;
+      const el=groupEl(g.id);
+      el.style.left=(gx+dx)+"px"; el.style.top=(gy+dy)+"px";
+      items.forEach(it=>{ if(it.el){ it.el.style.left=(it.x+dx)+"px"; it.el.style.top=(it.y+dy)+"px"; } });
+      renderWires();
+    });
+    const end = e=>{
+      if(!active) return; active=false; head.classList.remove("dragging");
+      try{ head.releasePointerCapture(e.pointerId); }catch(_){}
+      if(moved){
+        const dx=e.clientX-sx, dy=e.clientY-sy;
+        g.x=gx+dx; g.y=gy+dy;
+        emitOp({ type:"groupBox", id:g.id, x:g.x, y:g.y, w:g.w, h:g.h });
+        items.forEach(it=>{
+          it.t.x=it.x+dx; it.t.y=it.y+dy; clampInto(it.t);
+          if(it.el){ it.el.style.left=it.t.x+"px"; it.el.style.top=it.t.y+"px"; }
+          emitOp({ type:"move", id:it.t.id, x:it.t.x, y:it.t.y });   // tasks stay independent
+        });
+        renderWires();
+      }
+      endInteract();
+    };
+    head.addEventListener("pointerup", end);
+    head.addEventListener("pointercancel", end);
+  }
+  // resize from any edge/corner, like an OS window
+  function startResize(e, g, dir){
+    e.stopPropagation(); e.preventDefault();
+    const el = groupEl(g.id);
+    const sx=e.clientX, sy=e.clientY, x0=g.x, y0=g.y, w0=g.w, h0=g.h, MIN=80;
+    let box = { x:x0, y:y0, w:w0, h:h0 };
+    beginInteract();
+    const mv = ev=>{
+      const dx=ev.clientX-sx, dy=ev.clientY-sy;
+      let x=x0, y=y0, w=w0, h=h0;
+      if(dir.indexOf("e")>=0) w=Math.max(MIN, w0+dx);
+      if(dir.indexOf("s")>=0) h=Math.max(MIN, h0+dy);
+      if(dir.indexOf("w")>=0){ w=Math.max(MIN, w0-dx); x=x0+(w0-w); }
+      if(dir.indexOf("n")>=0){ h=Math.max(MIN, h0-dy); y=y0+(h0-h); }
+      box={x,y,w,h};
+      el.style.left=x+"px"; el.style.top=y+"px"; el.style.width=w+"px"; el.style.height=h+"px";
+    };
+    const up = ()=>{
+      window.removeEventListener("pointermove", mv);
+      window.removeEventListener("pointerup", up);
+      g.x=box.x; g.y=box.y; g.w=box.w; g.h=box.h;
+      emitOp({ type:"groupBox", id:g.id, x:g.x, y:g.y, w:g.w, h:g.h });
+      endInteract();
+    };
+    window.addEventListener("pointermove", mv);
+    window.addEventListener("pointerup", up);
+  }
+  function renameGroupInline(el, g){
+    const head = el.querySelector(".group-head");
+    const nameEl = head.querySelector(".group-name");
+    const inp = document.createElement("input");
+    inp.className = "group-name-input"; inp.value = g.name;
+    head.replaceChild(inp, nameEl); inp.focus(); inp.select(); beginInteract();
+    let done=false;
+    const finish = save=>{ if(done) return; done=true;
+      const v=inp.value.trim();
+      if(save && v && v!==g.name){ g.name=v; emitOp({ type:"renameGroup", id:g.id, name:v }); }
+      endInteract(); renderGroups(); };
+    inp.addEventListener("pointerdown", e=>e.stopPropagation());
+    inp.addEventListener("keydown", e=>{ if(e.key==="Enter"){e.preventDefault();finish(true);} else if(e.key==="Escape"){e.preventDefault();finish(false);} });
+    inp.addEventListener("blur", ()=>finish(true));
+  }
+  function deleteGroup(id){
+    state.groups = (state.groups||[]).filter(g=>g.id!==id);
+    emitOp({ type:"delGroup", id });
+    const el = groupEl(id); if(el) el.remove();   // tasks are untouched
+  }
+  function createGroupAt(x, y, w, h){
+    const g = { id: uid(), name:"Group", color: ACCENTS[((state.groups||[]).length) % ACCENTS.length], x, y, w, h };
+    if(!state.groups) state.groups = [];
+    state.groups.push(g);
+    emitOp({ type:"addGroup", group:g });
+    renderGroups();
+  }
+  // "square drawing tool": click the dock button, then drag on the board to draw a group
+  let drawMode = false;
+  function setDrawMode(on){
+    drawMode = on;
+    board.classList.toggle("drawing", on);
+    document.getElementById("groupTool").classList.toggle("active", on);
+  }
+  function setupDraw(){
+    board.addEventListener("pointerdown", e=>{
+      if(!drawMode || e.button!==0) return;
+      e.preventDefault(); e.stopPropagation();
+      const b = board.getBoundingClientRect();
+      const wx = e.clientX - b.left - pan.x, wy = e.clientY - b.top - pan.y;
+      const prev = document.createElement("div"); prev.className = "group-preview"; world.appendChild(prev);
+      beginInteract();
+      const box = ev=>{
+        const cx = ev.clientX - b.left - pan.x, cy = ev.clientY - b.top - pan.y;
+        return { x:Math.min(wx,cx), y:Math.min(wy,cy), w:Math.abs(cx-wx), h:Math.abs(cy-wy) };
+      };
+      const mv = ev=>{ const r=box(ev); prev.style.left=r.x+"px"; prev.style.top=r.y+"px"; prev.style.width=r.w+"px"; prev.style.height=r.h+"px"; };
+      const up = ev=>{
+        window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up);
+        const r = box(ev); prev.remove(); endInteract(); setDrawMode(false);
+        if(r.w > 24 && r.h > 24) createGroupAt(Math.round(r.x), Math.round(r.y), Math.round(r.w), Math.round(r.h));
+      };
+      window.addEventListener("pointermove", mv);
+      window.addEventListener("pointerup", up);
+    }, true);   // capture: run before pan / note handlers
+  }
+  const GROUP_COLORS = ACCENTS.concat(["#64748b"]);
+  function showGroupColor(x, y, id){
+    const g = (state.groups||[]).find(z=>z.id===id); if(!g) return;
+    const el = document.getElementById("groupPop");
+    el.innerHTML = '<div class="ctx-title">Group color</div><div class="sw-row"></div>';
+    const row = el.querySelector(".sw-row");
+    GROUP_COLORS.forEach(c=>{
+      const s = document.createElement("div");
+      s.className = "sw" + (c===g.color ? " sel" : ""); s.style.background = c;
+      s.addEventListener("click", e=>{ e.stopPropagation(); g.color=c; emitOp({ type:"groupColor", id, color:c }); renderGroups(); hideGroupPop(); });
+      row.appendChild(s);
+    });
+    el.classList.remove("hidden");
+    const mw=el.offsetWidth, mh=el.offsetHeight;
+    el.style.left=Math.min(x, innerWidth-mw-8)+"px"; el.style.top=Math.min(y, innerHeight-mh-8)+"px";
+  }
+  function hideGroupPop(){ document.getElementById("groupPop").classList.add("hidden"); }
+
+  // ---------------- subtasks ----------------
+  function emitSubs(t){ emitOp({ type:"subs", id:t.id, subs:t.subs }); }
+  function editSub(stx){
+    if(!stx || stx.getAttribute("contenteditable")==="true"){ stx&&stx.focus(); return; }
+    beginInteract();
+    stx.setAttribute("contenteditable","true"); stx.focus();
+    const r = document.createRange(); r.selectNodeContents(stx); r.collapse(false);
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+  }
+  function buildSubs(el, t){
+    const wrap = el.querySelector(".subs");
+    wrap.innerHTML = "";
+    (t.subs||[]).forEach(s=>{
+      const row = document.createElement("div");
+      row.className = "sub" + (s.done ? " done" : "");
+      row.innerHTML = '<input type="checkbox" class="cb"><div class="sub-txt" spellcheck="false"></div><span class="sub-x" title="Delete">×</span>';
+      row.querySelector(".cb").checked = s.done;
+      row.querySelector(".sub-txt").textContent = s.text;
+      row.addEventListener("pointerdown", e=>e.stopPropagation());   // don't drag the note
+      row.querySelector(".cb").addEventListener("change", e=>{
+        s.done = e.target.checked; row.classList.toggle("done", s.done); emitSubs(t);
+      });
+      const stx = row.querySelector(".sub-txt");
+      stx.addEventListener("dblclick", ()=>editSub(stx));
+      stx.addEventListener("blur", ()=>{
+        if(stx.getAttribute("contenteditable")!=="true") return;
+        stx.removeAttribute("contenteditable");
+        const v = stx.textContent.trim(); stx.textContent = v;
+        if(v !== s.text){ s.text = v; emitSubs(t); }
+        endInteract();
+      });
+      stx.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); stx.blur(); } });
+      row.querySelector(".sub-x").addEventListener("click", e=>{
+        e.stopPropagation();
+        t.subs = (t.subs||[]).filter(z=>z.id!==s.id); emitSubs(t); buildSubs(el, t);
+      });
+      wrap.appendChild(row);
+    });
+  }
+
   function renderNote(t){
     const el = document.createElement("div");
     el.className = "note";
@@ -923,8 +1234,24 @@
       '<div class="bar"></div>' +
       '<div class="x" title="Delete">×</div>' +
       '<div class="link-handle" title="Link"></div>' +
-      '<div class="body"><span class="grip">⠿</span><div class="txt" spellcheck="false"></div></div>';
+      '<div class="body"><span class="grip">⠿</span><div class="txt" spellcheck="false"></div></div>' +
+      '<div class="subs"></div>' +
+      '<div class="sub-add">+ subtask</div>';
     el.querySelector(".txt").textContent = t.text;
+    buildSubs(el, t);
+
+    // add a subtask
+    const addBtn = el.querySelector(".sub-add");
+    addBtn.addEventListener("pointerdown", e=>e.stopPropagation());
+    addBtn.addEventListener("click", e=>{
+      e.stopPropagation();
+      if(!t.subs) t.subs = [];
+      t.subs.push({ id: uid(), text:"", done:false });
+      emitSubs(t); buildSubs(el, t);
+      const rows = el.querySelectorAll(".subs .sub");
+      const last = rows[rows.length-1];
+      if(last) editSub(last.querySelector(".sub-txt"));
+    });
 
     // drag-to-connect handle
     el.querySelector(".link-handle").addEventListener("pointerdown", e=>startConnect(e, t.id));
@@ -1121,6 +1448,7 @@
   // ---------------- render collections ----------------
   function renderBoard(){
     board.querySelectorAll(".note").forEach(n=>n.remove());
+    renderGroups();
     state.tasks.forEach(renderNote);
     refreshHint();
     renderWires();
@@ -1430,6 +1758,7 @@
       const pop = document.getElementById("colorPop");
       if(pop.classList.contains("hidden")) showColorPop(); else hideColorPop();
     });
+    document.getElementById("groupTool").addEventListener("click", e=>{ e.stopPropagation(); setDrawMode(!drawMode); });
 
     // the little ✕ that removes a hovered connection
     wireDel.addEventListener("mouseenter", ()=>clearTimeout(hideDelTimer));
@@ -1444,6 +1773,7 @@
     document.getElementById("sendBtn").addEventListener("click", sendComposer);
 
     setupPan();
+    setupDraw();
 
     // close the popups on outside interaction
     document.addEventListener("click", e=>{
@@ -1451,17 +1781,18 @@
       if(!e.target.closest("#colorPop") && !e.target.closest("#composerColor")) hideColorPop();
       if(!e.target.closest("#menuPop") && !e.target.closest("#menuBtn")) hideMenu();
       if(!e.target.closest("#pageCtx")) hidePageCtx();
+      if(!e.target.closest("#groupPop") && !e.target.closest(".g-color")) hideGroupPop();
     });
     document.addEventListener("pointerdown", e=>{ if(!e.target.closest("#ctxMenu")) hideCtx(); }, true);
     window.addEventListener("scroll", hideCtx, true);
     document.addEventListener("keydown", e=>{
       const t = e.target;
       const typing = t && (t.tagName==="TEXTAREA" || t.isContentEditable);
-      if(e.key==="Escape"){ hideCtx(); hideColorPop(); hideMenu(); hidePageCtx(); }
+      if(e.key==="Escape"){ hideCtx(); hideColorPop(); hideMenu(); hidePageCtx(); hideGroupPop(); if(drawMode) setDrawMode(false); }
       if(e.key==="Home" && !typing){ e.preventDefault(); centerView(); }
     });
 
-    window.addEventListener("resize", ()=>{ hideCtx(); hideColorPop(); hideMenu(); hidePageCtx(); });
+    window.addEventListener("resize", ()=>{ hideCtx(); hideColorPop(); hideMenu(); hidePageCtx(); hideGroupPop(); });
   }
 
   // ---------------- init ----------------

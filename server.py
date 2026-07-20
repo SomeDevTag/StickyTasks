@@ -44,6 +44,7 @@ def normalize_page(p):
         "tasks":       list(p.get("tasks") or []),
         "completed":   list(p.get("completed") or []),
         "connections": list(p.get("connections") or []),
+        "groups":      list(p.get("groups") or []),
     }
 
 def normalize(d):
@@ -145,6 +146,7 @@ def apply_op(op):
     if pg is None:
         return
     tasks, completed, conns = pg["tasks"], pg["completed"], pg["connections"]
+    groups = pg.setdefault("groups", [])
 
     if t == "add":
         task = op.get("task") or {}
@@ -158,6 +160,29 @@ def apply_op(op):
         x = _find(tasks, op.get("id"))
         if x:
             x["text"] = op.get("text", "")
+    elif t == "subs":
+        x = _find(tasks, op.get("id"))
+        if x:
+            x["subs"] = op.get("subs") or []
+    elif t == "addGroup":
+        g = op.get("group") or {}
+        if g.get("id") and not _find(groups, g["id"]):
+            groups.append(g)
+    elif t == "groupBox":
+        g = _find(groups, op.get("id"))
+        if g:
+            g["x"] = op.get("x"); g["y"] = op.get("y")
+            g["w"] = op.get("w"); g["h"] = op.get("h")
+    elif t == "renameGroup":
+        g = _find(groups, op.get("id"))
+        if g:
+            g["name"] = op.get("name") or ""
+    elif t == "groupColor":
+        g = _find(groups, op.get("id"))
+        if g:
+            g["color"] = op.get("color")
+    elif t == "delGroup":
+        pg["groups"] = [g for g in groups if g.get("id") != op.get("id")]
     elif t == "accent":
         x = _find(tasks, op.get("id"))
         if x:
@@ -302,6 +327,16 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
 
+class Server(ThreadingHTTPServer):
+    daemon_threads = True
+    # a client hanging up mid-stream (SSE) is normal — don't dump a traceback for it
+    def handle_error(self, request, client_address):
+        et = sys.exc_info()[0]
+        if et is not None and issubclass(et, (ConnectionAbortedError, ConnectionResetError, BrokenPipeError)):
+            return
+        super().handle_error(request, client_address)
+
+
 def lan_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
@@ -328,7 +363,7 @@ def main():
     chosen = port
     for p in range(port, port + 25):
         try:
-            httpd = ThreadingHTTPServer(("0.0.0.0", p), Handler)   # 0.0.0.0 = reachable on the LAN
+            httpd = Server(("0.0.0.0", p), Handler)   # 0.0.0.0 = reachable on the LAN
             chosen = p
             break
         except OSError:
