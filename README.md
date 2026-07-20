@@ -4,7 +4,8 @@ A little sticky-note board you can share with people on the same Wi-Fi.
 
 Jot things down, drag them around, box related notes together, and watch everyone's changes show up live. No accounts, no cloud — it just runs on your machine and saves to a plain `tasks.json` you can back up or peek at any time.
 
-<img width="1870" height="950" alt="StickyTasks board" src="https://github.com/user-attachments/assets/1e801fd4-e001-4bcf-8623-7ec72db1edc8" />
+<img width="1112" height="598" alt="image_2026-07-20_144357387" src="https://github.com/user-attachments/assets/18d000a0-e1ba-42cc-b5bc-4472f4f9a805" />
+
 
 ## Start it
 
