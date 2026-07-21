@@ -1511,11 +1511,11 @@
   }
 
   function attachDrag(el){
-    let sx, sy, ox, oy, moved, active=false;
+    let sx, sy, ox, oy, moved, active=false, downTarget=null, lastTap=0;
     el.addEventListener("pointerdown", e=>{
       if(el.querySelector(".txt").getAttribute("contenteditable")==="true") return;
       if(e.button!==0) return;
-      active = true; moved = false;
+      active = true; moved = false; downTarget = e.target;
       sx = e.clientX; sy = e.clientY;
       ox = parseFloat(el.style.left); oy = parseFloat(el.style.top);
       try{ el.setPointerCapture(e.pointerId); }catch(_){}
@@ -1538,8 +1538,14 @@
       dropzone.classList.remove("hot");
       document.body.classList.remove("holding");
       if(!moved){
-        // a tap (no drag) on touch selects the note so its controls appear
-        if(e.pointerType === "touch") activateNote(el);
+        if(e.pointerType === "touch"){
+          const now = Date.now();
+          if(downTarget && downTarget.closest(".body") && now - lastTap < 400){
+            lastTap = 0; focusEdit(el);          // double-tap the name -> edit it
+          } else {
+            lastTap = now; activateNote(el);      // single tap selects the note so its controls appear
+          }
+        }
         return;
       }
       if(overDrop(e.clientX, e.clientY)){ completeTask(el); endInteract(); return; }
