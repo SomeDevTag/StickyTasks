@@ -169,6 +169,21 @@
   }
   .page-item:hover .page-del{opacity:.7}
   .page-item .page-del:hover{opacity:1; background:var(--glass-fill-h)}
+  .page-item .page-grip{
+    flex:none; width:12px; margin-left:-4px; text-align:center; font-size:11px; line-height:1;
+    color:var(--muted); cursor:grab; opacity:0; transition:opacity .12s; touch-action:none; user-select:none;
+  }
+  .page-item:hover .page-grip{opacity:.6}
+  .page-item .page-grip:hover{opacity:1}
+  .page-item.page-dragging{
+    background:var(--glass-fill-h); box-shadow:0 6px 16px rgba(0,0,0,.22);
+    position:relative; z-index:6; cursor:grabbing;
+  }
+  .page-item.page-dragging .page-grip{opacity:1; cursor:grabbing}
+  .page-drop-line{
+    height:2px; margin:1px 8px; border-radius:2px; background:var(--accent);
+    box-shadow:0 0 5px var(--accent); pointer-events:none;
+  }
 
   /* ---------- dropdown menu (hidden extras) ---------- */
   #menuPop{
@@ -766,7 +781,7 @@
   // ---------------- persistence / sync ----------------
   function persistLocal(){ try{ localStorage.setItem(KEY, JSON.stringify({ pages, seq })); }catch(e){} }
   // send one change: apply it locally (caller already did), keep a backup, push to the server
-  const PAGE_OPS = { addPage:1, delPage:1, renamePage:1, pageColor:1, replace:1 };
+  const PAGE_OPS = { addPage:1, delPage:1, renamePage:1, pageColor:1, replace:1, reorderPages:1 };
   function emitOp(op){
     if(!op.page && !PAGE_OPS[op.type]) op.page = currentPageId;   // tag task ops with their page
     op.origin = clientId;
@@ -812,6 +827,11 @@
         currentPageId = pages[0].id; state = pageById(currentPageId);
         saveActivePage(); pan = loadPan(); renderAll(); applyPan();
       }
+      renderSidebar(); persistLocal(); return;
+    }
+    if(op.type === "reorderPages"){
+      const order = op.order || [];
+      pages.sort((a,b)=> (order.indexOf(a.id)+1 || 1e9) - (order.indexOf(b.id)+1 || 1e9));
       renderSidebar(); persistLocal(); return;
     }
     if(op.type === "replace"){
@@ -1111,6 +1131,10 @@
       el.querySelector(".g-del").addEventListener("click", e=>{ e.stopPropagation(); deleteGroup(g.id); });
       el.querySelector(".g-color").addEventListener("click", e=>{ e.stopPropagation(); showGroupColor(e.clientX, e.clientY, g.id); });
       el.querySelector(".g-rename").addEventListener("click", e=>{ e.stopPropagation(); renameGroupInline(el, g); });
+      el.querySelector(".group-head").addEventListener("dblclick", e=>{
+        if(e.target.closest(".group-btn")) return;    // not the little action buttons
+        e.stopPropagation(); renameGroupInline(el, g);
+      });
       attachGroupDrag(el.querySelector(".group-head"), g);
       ["n","s","e","w","ne","nw","se","sw"].forEach(dir=>{
         el.querySelector(".gh-"+dir).addEventListener("pointerdown", e=>startResize(e, g, dir));
@@ -1786,7 +1810,59 @@
   }
 
   // ---------------- pages / workspaces (sidebar) ----------------
-  let addingPage = false, renamingId = null;
+  let addingPage = false, renamingId = null, suppressPageClick = false;
+  // grab a page's grip and drag it up/down to reorder the sidebar; an accent line marks the drop spot
+  function startPageDrag(e, p, item, list){
+    if(e.button != null && e.button !== 0) return;
+    const startY = e.clientY, pageId = p.id;
+    let moved = false, targetIdx = null;
+    const line = document.createElement("div");
+    line.className = "page-drop-line";
+    document.body.style.userSelect = "none";
+    item.classList.add("page-dragging");
+    beginInteract();
+    const layout = clientY=>{
+      if(Math.abs(clientY - startY) > 3) moved = true;
+      item.style.transform = "translateY(" + (clientY - startY) + "px)";
+      const others = [...list.querySelectorAll(".page-item:not(.page-dragging)")];
+      let idx = others.length;
+      for(let i=0;i<others.length;i++){
+        const r = others[i].getBoundingClientRect();
+        if(clientY < r.top + r.height/2){ idx = i; break; }
+      }
+      targetIdx = idx;
+      if(idx < others.length) list.insertBefore(line, others[idx]); else list.appendChild(line);
+    };
+    const move = ev=>{ ev.preventDefault(); layout(ev.clientY); };
+    const finish = ()=>{
+      window.removeEventListener("pointermove", move, true);
+      window.removeEventListener("pointerup", finish, true);
+      window.removeEventListener("pointercancel", finish, true);
+      document.body.style.userSelect = "";
+      line.remove(); item.style.transform = ""; item.classList.remove("page-dragging");
+      if(moved){
+        suppressPageClick = true;
+        setTimeout(()=>{ suppressPageClick = false; }, 300);
+      }
+      if(moved && targetIdx != null){
+        const cur = pages.slice();
+        const from = cur.findIndex(x=>x.id===pageId);
+        if(from >= 0){
+          const movedPage = cur.splice(from, 1)[0];
+          cur.splice(targetIdx, 0, movedPage);
+          const changed = cur.map(x=>x.id).join(",") !== pages.map(x=>x.id).join(",");
+          pages.splice(0, pages.length, ...cur);        // reorder in place (keep the same array)
+          renderSidebar();
+          if(changed) emitOp({ type:"reorderPages", order: pages.map(x=>x.id) });
+        }
+      }
+      endInteract();
+    };
+    window.addEventListener("pointermove", move, true);
+    window.addEventListener("pointerup", finish, true);
+    window.addEventListener("pointercancel", finish, true);
+    layout(startY);
+  }
   function nextPageColor(){ return ACCENTS[pages.length % ACCENTS.length]; }
   function hexToRgba(hex, a){
     const n = parseInt((hex||"#3b82f6").replace("#",""), 16);
@@ -1817,14 +1893,22 @@
         return;
       }
 
-      item.innerHTML = '<span class="page-dot"></span><span class="page-name"></span><span class="page-del" title="Delete">×</span>';
+      item.innerHTML = '<span class="page-grip" title="Drag to reorder">⠿</span><span class="page-dot"></span><span class="page-name"></span><span class="page-del" title="Delete">×</span>';
       item.querySelector(".page-dot").style.background = p.color;
       item.querySelector(".page-name").textContent = p.name;
       if(p.id === currentPageId){ item.style.background = hexToRgba(p.color, .2); item.style.color = p.color; }
-      item.addEventListener("click", e=>{ if(e.target.closest(".page-del")) return; switchPage(p.id); });
+      item.addEventListener("click", e=>{
+        if(suppressPageClick){ suppressPageClick = false; return; }   // ignore the click that ends a drag
+        if(e.target.closest(".page-del")) return;
+        switchPage(p.id);
+      });
       item.addEventListener("dblclick", e=>{ e.stopPropagation(); startRenamePage(p.id); });
       item.addEventListener("contextmenu", e=>{ e.preventDefault(); showPageCtx(e.clientX, e.clientY, p.id); });
       item.querySelector(".page-del").addEventListener("click", e=>{ e.stopPropagation(); deletePage(p.id); });
+      // grab the grip to drag this page to a new position
+      const grip = item.querySelector(".page-grip");
+      grip.addEventListener("click", e=>{ e.stopPropagation(); });
+      grip.addEventListener("pointerdown", e=>{ e.preventDefault(); e.stopPropagation(); startPageDrag(e, p, item, list); });
       list.appendChild(item);
     });
 

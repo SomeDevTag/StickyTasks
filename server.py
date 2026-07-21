@@ -135,6 +135,11 @@ def apply_op(op):
         if not doc["pages"]:
             doc["pages"] = [normalize_page({"id": "p_main", "name": "Main"})]
         return
+    if t == "reorderPages":
+        order = op.get("order") or []
+        idx = {pid: i for i, pid in enumerate(order)}
+        doc["pages"].sort(key=lambda p: idx.get(p.get("id"), 1_000_000))
+        return
     if t == "replace":
         nd = normalize(op.get("doc"))
         doc["pages"] = nd["pages"]
