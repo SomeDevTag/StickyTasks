@@ -855,18 +855,21 @@
     });
   }
 
-  function updatePresence(count){
-    const el = document.getElementById("presence");
-    if(!el) return;
-    if(live && count > 0){ el.style.display = ""; el.textContent = "🟢 " + count + " online"; el.title = count + " connected right now"; }
-    else el.style.display = "none";
-  }
-
-  function updateStatus(){
+  let presenceCount = 0;
+  // one compact line: "🟢 Live (4)" when others are connected, "🟢 Live" alone, or "🌐 Local"
+  function renderStatus(){
     const el = document.getElementById("status");
     if(!el) return;
-    el.textContent = live ? "🟢 Live · shared" : "🌐 Local only";
+    if(live){
+      el.textContent = presenceCount > 0 ? "🟢 Live (" + presenceCount + ")" : "🟢 Live";
+      el.title = presenceCount > 0 ? presenceCount + " connected right now" : "Shared — you're the only one here";
+    } else {
+      el.textContent = "🌐 Local";
+      el.title = "Not connected to a shared server";
+    }
   }
+  function updatePresence(count){ presenceCount = count || 0; renderStatus(); }
+  function updateStatus(){ renderStatus(); }
 
   // ---------------- helpers ----------------
   function toast(msg){
@@ -1914,12 +1917,12 @@
       '<button class="m-item" id="menuExport">⬇  Export</button>' +
       '<button class="m-item" id="menuImport">⬆  Import</button>' +
       '<div class="m-sep"></div>' +
-      '<div class="m-info" id="status"></div>' +
-      '<div class="m-info" id="presence" style="display:none"></div>';
+      '<div class="m-info" id="status"></div>';
     m.querySelector("#menuCenter").addEventListener("click", ()=>{ hideMenu(); centerView(); });
     m.querySelector("#themeItem").addEventListener("click", toggleTheme);
     m.querySelector("#menuExport").addEventListener("click", ()=>{ hideMenu(); exportJson(); });
     m.querySelector("#menuImport").addEventListener("click", ()=>{ hideMenu(); document.getElementById("fileInput").click(); });
+    renderStatus();
   }
   function showMenu(){
     const m = document.getElementById("menuPop");
