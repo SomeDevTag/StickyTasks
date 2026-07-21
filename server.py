@@ -164,6 +164,11 @@ def apply_op(op):
         x = _find(tasks, op.get("id"))
         if x:
             x["subs"] = op.get("subs") or []
+    elif t == "time":
+        x = _find(tasks, op.get("id"))
+        if x:
+            v = op.get("time")
+            x["time"] = v if isinstance(v, (int, float)) and v > 0 else 0
     elif t == "addGroup":
         g = op.get("group") or {}
         if g.get("id") and not _find(groups, g["id"]):
