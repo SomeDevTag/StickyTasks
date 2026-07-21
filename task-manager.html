@@ -230,7 +230,7 @@
     cursor:crosshair; opacity:0; pointer-events:none;
     transition:opacity .12s, transform .1s;
   }
-  .note:hover .link-handle,
+  .note.hovered .link-handle,
   .note.activated .link-handle{opacity:1; pointer-events:auto}
   .note .link-handle:hover{transform:scale(1.22)}
   .note.dragging .link-handle{opacity:0; pointer-events:none}
@@ -278,12 +278,32 @@
   .note .sub .sub-x{flex:none; width:16px; text-align:center; color:var(--n-muted); cursor:pointer; opacity:0; transition:.12s}
   .note .sub:hover .sub-x{opacity:.6}
   .note .sub .sub-x:hover{opacity:1; color:var(--danger)}
-  .note .sub-add{
-    display:none; align-items:center; gap:5px; margin-top:8px; padding:4px 10px 4px 8px;
-    font-size:11.5px; font-weight:600; letter-spacing:.2px; color:var(--n-muted); cursor:pointer;
-    border-radius:999px; background:var(--n-xhover); width:max-content;
+  .note .sub .sub-grip{
+    flex:none; width:14px; margin-top:1px; text-align:center; font-size:11px; line-height:17px;
+    color:var(--n-muted); cursor:grab; opacity:0; transition:opacity .12s; touch-action:none; user-select:none;
   }
-  .note:hover .sub-add, .note.activated .sub-add{display:inline-flex}   /* only takes space when reachable */
+  .note .sub:hover .sub-grip{opacity:.5}
+  .note .sub .sub-grip:hover{opacity:.9}
+  .note .sub.sub-dragging{
+    position:relative; z-index:6; background:var(--note-bg); border-radius:8px;
+    box-shadow:0 6px 16px rgba(0,0,0,.22); cursor:grabbing;
+  }
+  .note .sub.sub-dragging .sub-grip{opacity:.9; cursor:grabbing}
+  .note .sub-drop-line{
+    height:2px; margin:1px 4px; border-radius:2px; background:var(--accent);
+    box-shadow:0 0 5px var(--accent); pointer-events:none;
+  }
+  .note .sub-add{
+    display:flex; align-items:center; gap:5px; width:max-content;
+    font-size:11.5px; font-weight:600; letter-spacing:.2px; color:var(--n-muted); cursor:pointer;
+    border-radius:999px; background:var(--n-xhover);
+    max-height:0; opacity:0; margin-top:0; padding:0 10px; overflow:hidden; pointer-events:none;
+    transition:max-height .2s ease, opacity .18s ease, margin-top .2s ease, padding .2s ease;
+  }
+  /* smoothly expand/collapse instead of snapping, so it's easy to reach and looks tidy */
+  .note.hovered .sub-add, .note.activated .sub-add{
+    max-height:30px; opacity:1; margin-top:8px; padding:4px 10px 4px 8px; pointer-events:auto;
+  }
   .note .sub-add:hover{color:var(--accent); background:var(--accent-soft)}
   .note .time-badge{
     margin-top:8px; width:max-content; padding:2px 9px; border-radius:999px;
@@ -503,6 +523,11 @@
   .done-card .cap{height:6px; margin:0 -14px 12px; background:var(--accent,#94a3b8)}
   .done-card .txt{font-size:14px; line-height:1.45; color:var(--muted); text-decoration:line-through; word-break:break-word; white-space:pre-wrap}
   .done-card .when{font-size:11px; color:var(--muted)}
+  .done-card .done-subs{display:flex; flex-direction:column; gap:3px}
+  .done-card .done-subs-head{font-size:10.5px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; color:var(--muted); margin-bottom:1px}
+  .done-card .done-sub{display:flex; align-items:flex-start; gap:7px; font-size:12.5px; line-height:1.4; color:var(--ink); word-break:break-word}
+  .done-card .done-sub .tick{flex:none; color:var(--accent); font-size:11px; line-height:1.55}
+  .done-card .done-sub.done .t{text-decoration:line-through; text-decoration-color:var(--accent); opacity:.55}
   .done-card .row{display:flex; gap:8px; margin-top:2px}
   .done-card .row .btn{flex:1; justify-content:center; padding:7px}
   .undo{color:var(--accent)}
@@ -669,7 +694,8 @@
       x: t.x, y: t.y, rot: t.rot || 0,
       accent: t.accent || t.color || "#94a3b8",
       ts: t.ts,
-      time: typeof t.time === "number" && t.time > 0 ? t.time : 0
+      time: typeof t.time === "number" && t.time > 0 ? t.time : 0,
+      subs: normSubs(t.subs)
     }));
     const connections = (p.connections||[])
       .map(c => ({ id: c.id || uid(), a: c.a, b: c.b }))
@@ -1279,10 +1305,18 @@
     (t.subs||[]).forEach(s=>{
       const row = document.createElement("div");
       row.className = "sub" + (s.done ? " done" : "");
-      row.innerHTML = '<input type="checkbox" class="cb"><div class="sub-txt" spellcheck="false"></div><span class="sub-x" title="Delete">×</span>';
+      row.dataset.sid = s.id;
+      row.innerHTML = '<span class="sub-grip" title="Drag to reorder">⠿</span>' +
+                      '<input type="checkbox" class="cb"><div class="sub-txt" spellcheck="false"></div>' +
+                      '<span class="sub-x" title="Delete">×</span>';
       row.querySelector(".cb").checked = s.done;
       row.querySelector(".sub-txt").textContent = s.text;
       row.addEventListener("pointerdown", e=>e.stopPropagation());   // don't drag the note
+      // drag the grip to reorder subtasks within the task
+      row.querySelector(".sub-grip").addEventListener("pointerdown", ev=>{
+        ev.preventDefault(); ev.stopPropagation();
+        startSubDrag(ev, t, row, wrap);
+      });
       row.querySelector(".cb").addEventListener("change", e=>{
         s.done = e.target.checked; row.classList.toggle("done", s.done); emitSubs(t);
       });
@@ -1302,6 +1336,61 @@
       });
       wrap.appendChild(row);
     });
+  }
+  // pointer-drag a subtask row (by its grip) to reorder it within the task.
+  // the grabbed row lifts and follows the cursor; an accent line marks where it will drop.
+  function startSubDrag(e, t, row, wrap){
+    if(e.button != null && e.button !== 0) return;
+    const el  = wrap.closest(".note");
+    const sid = row.dataset.sid;
+    const startY = e.clientY;
+    beginInteract();
+    document.body.style.userSelect = "none";
+    row.classList.add("sub-dragging");
+    const line = document.createElement("div");
+    line.className = "sub-drop-line";
+    let targetIdx = null;
+
+    const layout = clientY=>{
+      row.style.transform = "translateY(" + (clientY - startY) + "px)";
+      const others = [...wrap.querySelectorAll(".sub:not(.sub-dragging)")];
+      let idx = others.length;
+      for(let i=0;i<others.length;i++){
+        const r = others[i].getBoundingClientRect();
+        if(clientY < r.top + r.height/2){ idx = i; break; }
+      }
+      targetIdx = idx;
+      if(idx < others.length) wrap.insertBefore(line, others[idx]); else wrap.appendChild(line);
+      renderWires();
+    };
+    const move = ev=>{ ev.preventDefault(); layout(ev.clientY); };
+    const finish = ()=>{
+      window.removeEventListener("pointermove", move, true);
+      window.removeEventListener("pointerup", finish, true);
+      window.removeEventListener("pointercancel", finish, true);
+      document.body.style.userSelect = "";
+      line.remove();
+      row.style.transform = "";
+      row.classList.remove("sub-dragging");
+      if(targetIdx != null){
+        const cur = t.subs.slice();
+        const from = cur.findIndex(s=>s.id===sid);
+        if(from >= 0){
+          const moved = cur.splice(from, 1)[0];       // remove first, then insert at the target slot
+          cur.splice(targetIdx, 0, moved);
+          const changed = cur.map(s=>s.id).join(",") !== t.subs.map(s=>s.id).join(",");
+          t.subs = cur;
+          buildSubs(el, t);                            // rebuild cleanly (resets transforms, new order)
+          if(changed) emitSubs(t);
+        }
+      }
+      renderWires();
+      endInteract();
+    };
+    window.addEventListener("pointermove", move, true);
+    window.addEventListener("pointerup", finish, true);
+    window.addEventListener("pointercancel", finish, true);
+    layout(startY);
   }
 
   // keep connection lines glued to notes whenever a note's size changes
@@ -1358,9 +1447,14 @@
       showCtx(e.clientX, e.clientY, t.id);
     });
 
-    // hovering reveals "+ subtask" and changes the note's height — redraw links so they stay glued
-    el.addEventListener("mouseenter", renderWires);
-    el.addEventListener("mouseleave", renderWires);
+    // hovering reveals "+ subtask" etc. and changes the note's height — redraw links so they stay glued.
+    // keep the expanded state for a moment after the cursor leaves so its buttons stay easy to click.
+    let hoverTimer;
+    el.addEventListener("mouseenter", ()=>{ clearTimeout(hoverTimer); el.classList.add("hovered"); renderWires(); });
+    el.addEventListener("mouseleave", ()=>{
+      clearTimeout(hoverTimer);
+      hoverTimer = setTimeout(()=>{ el.classList.remove("hovered"); renderWires(); }, 650);
+    });
 
     attachDrag(el);
     world.appendChild(el);
@@ -1623,9 +1717,21 @@
       const c = document.createElement("div");
       c.className = "done-card";
       c.style.setProperty("--accent", t.accent || "#94a3b8");
+      const subs = t.subs || [];
+      const doneCount = subs.filter(s=>s.done).length;
       c.innerHTML =
         '<div class="cap"></div>' +
         '<div class="txt">'+ escapeHtml(t.text || "(empty)") +'</div>' +
+        (subs.length
+          ? '<div class="done-subs">' +
+              '<div class="done-subs-head">Subtasks · '+ doneCount +'/'+ subs.length +'</div>' +
+              subs.map(s=>
+                '<div class="done-sub'+(s.done?' done':'')+'">' +
+                  '<span class="tick">'+(s.done?'✓':'○')+'</span>' +
+                  '<span class="t">'+ escapeHtml(s.text || "") +'</span>' +
+                '</div>').join("") +
+            '</div>'
+          : "") +
         (t.time > 0 ? '<div class="when">⏱ '+ fmtHours(t.time) +' worked</div>' : '') +
         '<div class="when">Completed '+ fmt(t.ts) +'</div>' +
         '<div class="row">' +
@@ -1754,10 +1860,11 @@
   function switchPage(id){
     if(!pageById(id) || id === currentPageId) return;
     savePan();                                    // remember our spot on the page we're leaving
+    const keepView = onCompletedView() ? "completed" : "board";   // stay on whichever tab we're on
     currentPageId = id; state = pageById(id); saveActivePage();
     colorIx = state.tasks.length + state.completed.length;
     pan = loadPan();
-    showView("board");
+    showView(keepView);
     renderSidebar(); renderAll(); applyPan();
   }
   // right-click a page: color swatches + rename
